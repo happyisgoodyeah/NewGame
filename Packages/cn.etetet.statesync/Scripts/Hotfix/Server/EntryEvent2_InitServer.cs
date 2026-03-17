@@ -5,6 +5,8 @@
     {
         protected override async ETTask Run(Scene root, EntryEvent2 args)
         {
+            //按配置扩展更多场景/进程内 Fiber
+            
             if (Options.Instance.Console == 1)
             {
                 root.AddComponent<ConsoleComponent>();

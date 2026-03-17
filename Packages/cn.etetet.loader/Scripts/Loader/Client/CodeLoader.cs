@@ -35,6 +35,8 @@ namespace ET
         {
             await DownloadAsync();
             
+            //加载 ET.Model、ET.ModelView、ET.Hotfix、ET.HotfixView
+            
             if (!Define.IsEditor)
             {
                 byte[] modelAssBytes = this.dlls["ET.Model.dll"].bytes;
@@ -47,6 +49,7 @@ namespace ET
                 //modelViewAssBytes = File.ReadAllBytes(Path.Combine(Define.CodeDir, "ET.ModelView.dll.bytes"));
                 //modelViewPdbBytes = File.ReadAllBytes(Path.Combine(Define.CodeDir, "ET.ModelView.pdb.bytes"));
 
+                //如果是 IL2CPP，额外加载 AOT metadata 补 HybridCLR 的 AOT 元数据，保证泛型/反射等场景正常
                 if (Define.EnableIL2CPP)
                 {
                     foreach (var kv in this.aotDlls)
@@ -70,12 +73,14 @@ namespace ET
             
             (Assembly hotfixAssembly, Assembly hotfixViewAssembly) = this.LoadHotfix();
 
+            //把所有程序集注册进 CodeTypes
             World.Instance.AddSingleton<CodeTypes, Assembly[]>(new[]
             {
                 typeof (World).Assembly, typeof (Init).Assembly, this.modelAssembly, this.modelViewAssembly, hotfixAssembly,
                 hotfixViewAssembly
             });
 
+            //反射调用 ET.Entry.Start
             IStaticMethod start = new StaticMethod(this.modelAssembly, "ET.Entry", "Start");
             start.Run();
         }

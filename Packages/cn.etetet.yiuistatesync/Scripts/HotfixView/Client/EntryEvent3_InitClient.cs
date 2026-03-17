@@ -10,11 +10,19 @@ namespace ET.Client
     {
         protected override async ETTask Run(Scene root, EntryEvent3 args)
         {
+            //缓存 Global、GlobalUI、GlobalConfig 等全局 Unity 节点和配置
             root.AddComponent<GlobalComponent>();
+            
+            //业务期资源加载器
             root.AddComponent<ResourcesLoaderComponent>();
+            
+            //当前玩家相关数据挂点
             root.AddComponent<PlayerComponent>();
+            
+            //当前客户端场景集合/引用管理
             root.AddComponent<CurrentScenesComponent>();
 
+            //创建 YIUIMgrComponent，让 UI 框架真正启动
             var result = await root.AddComponent<YIUIMgrComponent>().Initialize();
             if (!result)
             {
