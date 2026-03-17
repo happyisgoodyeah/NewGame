@@ -52,6 +52,7 @@
     
     <ItemGroup>
       <ProjectReference Include="..\..\cn.etetet.core\DotNet~\ET.Core.csproj" />
+      <ProjectReference Include="..\..\cn.etetet.sourcegenerator\DotNet~\ET.SourceGeneratorAttribute\ET.SourceGeneratorAttribute.csproj" />
     </ItemGroup>
 
 </Project>

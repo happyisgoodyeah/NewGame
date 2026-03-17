@@ -30,9 +30,9 @@
         <NoWarn>0169,0649,3021,8981,NU1903</NoWarn>
     </PropertyGroup>
 
-    <ItemGroup>
+<ItemGroup>
         <Compile Include="..\..\..\Library\PackageCache\com.unity.mathematics*\Unity.Mathematics\**\*.cs">
-            <Link>Unity.Mathematics/$([System.String]::new(%(RecursiveDir)).Substring($([System.String]::new(%(RecursiveDir)).Indexof("Unity.Mathematics"))).Replace("Unity.Mathematics", ""))/%(FileName)%(Extension)</Link>
+            <Link>Unity.Mathematics\%(RecursiveDir)%(FileName)%(Extension)</Link>
         </Compile>
     </ItemGroup>
 </Project>
