@@ -41,22 +41,38 @@ namespace ET
                 };
                 foreach (Type configType in configTypes)
                 {
-                    string configFilePath;
                     if (startConfigs.Contains(configType.Name))
                     {
-                        configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{Options.Instance.StartConfig}/{configType.Name}.bytes";    
+                        // 单机模式下从配置加载源头跳过服务端启动配置，保留原加载逻辑方便后续恢复。
+                        /*
+                        configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{Options.Instance.StartConfig}/{configType.Name}.bytes";
+                        output[configType] = File.ReadAllBytes(configFilePath);
+                        */
+                        continue;
                     }
-                    else
-                    {
-                        configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{configType.Name}.bytes";
-                    }
+
+                    string configFilePath;
+                    configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{configType.Name}.bytes";
                     output[configType] = File.ReadAllBytes(configFilePath);
                 }
             }
             else
             {
+                List<string> startConfigs = new List<string>()
+                {
+                    "StartMachineConfigCategory",
+                    "StartProcessConfigCategory",
+                    "StartSceneConfigCategory",
+                    "StartZoneConfigCategory",
+                };
                 foreach (Type type in configTypes)
                 {
+                    if (startConfigs.Contains(type.Name))
+                    {
+                        // 单机模式下跳过服务端启动配置加载。
+                        continue;
+                    }
+
                     TextAsset v = await ResourcesComponent.Instance.LoadAssetAsync<TextAsset>($"{ConstValue.ExcelPackagePath}/Config/Bytes/c/{type.Name}.bytes");
                     output[type] = v.bytes;
                 }
@@ -97,16 +113,18 @@ namespace ET
             };
 
             string configName = args.ConfigName;
-                
-            string configFilePath;
+
             if (startConfigs.Contains(configName))
             {
-                configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{Options.Instance.StartConfig}/{configName}.bytes";    
+                // 单机模式下禁用服务端启动配置单独加载，保留原路径逻辑方便后续恢复。
+                /*
+                string startConfigFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{Options.Instance.StartConfig}/{configName}.bytes";
+                return File.ReadAllBytes(startConfigFilePath);
+                */
+                throw new Exception($"single-player mode disabled start config load: {configName}");
             }
-            else
-            {
-                configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{configName}.bytes";
-            }
+
+            string configFilePath = $"{ConstValue.ExcelPackagePath}/Config/Bytes/{ct}/{configName}.bytes";
 
             await ETTask.CompletedTask;
             return File.ReadAllBytes(configFilePath);

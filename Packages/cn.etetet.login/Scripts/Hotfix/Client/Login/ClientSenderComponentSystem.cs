@@ -37,6 +37,8 @@ namespace ET.Client
 
         public static async ETTask<long> LoginAsync(this ClientSenderComponent self, string address, string account, string password)
         {
+            // 单机模式下从客户端发送源头禁用 NetClient Fiber 与登录消息，保留原代码方便后续恢复。
+            /*
             self.fiberId = await FiberManager.Instance.Create(SchedulerType.ThreadPool, 0, SceneType.NetClient, "");
             self.netClientActorId = new ActorId(self.Fiber().Process, self.fiberId);
 
@@ -48,17 +50,28 @@ namespace ET.Client
             NetClient2Main_Login response = await self.Root().GetComponent<ProcessInnerSender>().Call(self.netClientActorId, main2NetClientLogin) as NetClient2Main_Login;
             
             return response.PlayerId;
+            */
+
+            Log.Info("single-player mode: LoginAsync network flow disabled.");
+            await ETTask.CompletedTask;
+            return 1;
         }
 
         public static void Send(this ClientSenderComponent self, IMessage message)
         {
+            // 单机模式下从客户端发送源头禁用消息外发，保留原代码方便后续恢复。
+            /*
             A2NetClient_Message a2NetClientMessage = A2NetClient_Message.Create();
             a2NetClientMessage.MessageObject = message;
             self.Root().GetComponent<ProcessInnerSender>().Send(self.netClientActorId, a2NetClientMessage);
+            */
+            Log.Info($"single-player mode: skip network Send {message?.GetType().Name}.");
         }
 
         public static async ETTask<IResponse> Call(this ClientSenderComponent self, IRequest request, bool needException = true)
         {
+            // 单机模式下从客户端请求源头禁用 RPC 外发，保留原代码方便后续恢复。
+            /*
             A2NetClient_Request a2NetClientRequest = A2NetClient_Request.Create();
             a2NetClientRequest.MessageObject = request;
             using A2NetClient_Response a2NetClientResponse = await self.Root().GetComponent<ProcessInnerSender>().Call(self.netClientActorId, a2NetClientRequest) as A2NetClient_Response;
@@ -74,6 +87,11 @@ namespace ET.Client
                 throw new RpcException(response.Error, $"Rpc error: {request}, response: {response}");
             }
             return response;
+            */
+
+            Log.Info($"single-player mode: skip network Call {request?.GetType().Name}.");
+            await ETTask.CompletedTask;
+            return null;
         }
 
     }

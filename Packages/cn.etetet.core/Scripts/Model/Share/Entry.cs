@@ -55,8 +55,8 @@ namespace ET
             //消息派发队列
             World.Instance.AddSingleton<MessageQueue>();
             
-            //网络服务集合
-            World.Instance.AddSingleton<NetServices>();
+            // 单机模式下从启动源头禁用网络服务集合初始化，保留原代码方便后续恢复。
+            //World.Instance.AddSingleton<NetServices>();
             
             //消息日志过滤，这里忽略了 ping
             LogMsg logMsg = World.Instance.AddSingleton<LogMsg>();
