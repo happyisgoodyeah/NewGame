@@ -35,6 +35,8 @@
 - `Packages/cn.etetet.yiuiluban`: Luban 工具链
 - `Packages/cn.etetet.yiuilubangen`: Luban 生成产物与加载实现
 - `Packages/cn.etetet.yiuistatesync`: 当前主要 UI 示例业务
+- `Packages/gamebase`: 项目基础层，放可复用、可迁移到其他项目的基础代码
+- `Packages/gameplay`: 项目业务层，放当前项目专属玩法、流程、界面与业务逻辑
 
 ## ET 设计规则
 
@@ -181,6 +183,9 @@
 
 ## 修改建议
 
+- 后续新增代码优先落在 `Packages/gamebase` 或 `Packages/gameplay`
+- 可复用的基础能力、通用组件、基础工具、基础框架扩展放 `Packages/gamebase`
+- 当前项目专属玩法、业务流程、业务 UI、项目定制配置放 `Packages/gameplay`
 - 纯 ET 业务: 放到业务包的 `Model / ModelView / Hotfix / HotfixView`
 - UI 业务: 用 YIUI 工具生成组件，手写逻辑放 `YIUISystem`
 - 扩展示例 UI: 优先在 `Packages/cn.etetet.yiuistatesync`
