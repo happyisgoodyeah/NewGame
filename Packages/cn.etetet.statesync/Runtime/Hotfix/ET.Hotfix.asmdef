@@ -8,6 +8,8 @@
         "ET.Model",
         "ET.Recast",
         "ET.SourceGeneratorAttribute",
+        "GameBase",
+        "GamePlay",
         "Unity.Mathematics"
     ],
     "includePlatforms": [],

@@ -11,6 +11,8 @@
         "ET.UI",
         "ET.YIUIFramework",
         "ET.YooAssets",
+        "GameBase",
+        "GamePlay",
         "Unity.Mathematics",
         "Unity.TextMeshPro"
     ],
