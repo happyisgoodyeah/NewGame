@@ -29,7 +29,7 @@ namespace ET.Client
         {
             Log.Info("single-player mode: entering local map without network.");
 
-            const string localSceneName = "Map1";
+            const string localSceneName = "Test";
 
             CurrentScenesComponent currentScenesComponent = root.GetComponent<CurrentScenesComponent>();
             currentScenesComponent.Scene?.Dispose();
@@ -40,30 +40,13 @@ namespace ET.Client
 
             // 保持原有事件顺序，先走场景切换开始事件，让本地场景资源完成加载。
             await EventSystem.Instance.PublishAsync(root, new SceneChangeStart());
-
-            PlayerComponent playerComponent = root.GetComponent<PlayerComponent>();
-            long myId = playerComponent.MyId;
-            if (myId == 0)
-            {
-                myId = 1;
-                playerComponent.MyId = myId;
-            }
-
-            UnitInfo unitInfo = UnitInfo.Create();
-            unitInfo.UnitId = myId;
-            unitInfo.ConfigId = 1001;
-            unitInfo.Type = UnitType.Player;
-            unitInfo.Position = new float3(-10, 0, -10);
-            unitInfo.Forward = new float3(0, 0, 1);
-            unitInfo.KV[NumericType.Speed] = 6 * 10000;
-            unitInfo.KV[NumericType.AOI] = 15000;
-
-            Unit unit = UnitFactory.Create(currentScene, unitInfo);
-            unitComponent.Add(unit);
-
+            
             EventSystem.Instance.Publish(currentScene, new SceneChangeFinish());
+            
             root.GetComponent<ObjectWait>().Notify(new Wait_SceneChangeFinish());
+            
             EventSystem.Instance.Publish(root, new EnterMapFinish());
+            
             await ETTask.CompletedTask;
         }
     }
