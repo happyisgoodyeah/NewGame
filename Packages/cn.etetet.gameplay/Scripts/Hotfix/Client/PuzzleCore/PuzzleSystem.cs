@@ -13,6 +13,7 @@ namespace ET.Client
             self.State = PuzzleState.Tray;
             self.AnchorX = 0;
             self.AnchorY = 0;
+            self.OriginSlotId = 0;
         }
 
         /// <summary>
@@ -24,7 +25,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Puzzle 中添加一个形状格 Slot。
+        /// 向 Puzzle 中添加一个形状格 Slot，并在数据创建完成后通知表现层绑定 SlotView。
         /// </summary>
         public static Slot AddSlot(this Puzzle self, int x, int y)
         {
@@ -34,7 +35,14 @@ namespace ET.Client
                 throw new Exception($"puzzle slot already exists: ({x}, {y})");
             }
 
-            return self.AddChildWithId<Slot, int, int, SlotType>(slotId, x, y, SlotType.PuzzleFilled);
+            Slot slot = self.AddChildWithId<Slot, int, int, SlotType>(slotId, x, y, SlotType.PuzzleFilled);
+            if (x == 0 && y == 0)
+            {
+                self.OriginSlotId = slot.Id;
+            }
+
+            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
+            return slot;
         }
 
         /// <summary>

@@ -9,7 +9,7 @@ namespace ET.Client
             self.X = x;
             self.Y = y;
             self.Kind = kind;
-            self.OccupyPuzzleId = 0;
+            self.BindingPuzzle = default;
         }
 
         /// <summary>
@@ -65,23 +65,53 @@ namespace ET.Client
         /// </summary>
         public static bool IsOccupied(this Slot self)
         {
-            return self.OccupyPuzzleId != 0;
+            return self.GetBindingPuzzle() != null;
         }
 
         /// <summary>
-        /// 记录当前格子被哪块拼图占用。
+        /// 获取当前 Grid Slot 绑定的 Puzzle。
         /// </summary>
-        public static void Occupy(this Slot self, Puzzle puzzle)
+        /// <param name="self">要查询的 Slot。</param>
+        /// <returns>当前绑定的 Puzzle；若未绑定则返回空。</returns>
+        public static Puzzle GetBindingPuzzle(this Slot self)
         {
-            self.OccupyPuzzleId = puzzle?.Id ?? 0;
+            return self.BindingPuzzle;
         }
 
         /// <summary>
-        /// 清空当前格子的占用记录。
+        /// 判断当前 Grid Slot 是否绑定到指定 Puzzle。
         /// </summary>
-        public static void ClearOccupy(this Slot self)
+        /// <param name="self">要查询的 Slot。</param>
+        /// <param name="puzzle">要比对的 Puzzle。</param>
+        /// <returns>当前 Slot 是否绑定到指定 Puzzle。</returns>
+        public static bool IsBoundToPuzzle(this Slot self, Puzzle puzzle)
         {
-            self.OccupyPuzzleId = 0;
+            return puzzle != null && self.GetBindingPuzzle() == puzzle;
+        }
+
+        /// <summary>
+        /// 将当前 Grid Slot 绑定到指定 Puzzle。
+        /// </summary>
+        /// <param name="self">要绑定的 Slot。</param>
+        /// <param name="puzzle">要写入的 Puzzle。</param>
+        public static void BindPuzzle(this Slot self, Puzzle puzzle)
+        {
+            if (puzzle == null)
+            {
+                self.BindingPuzzle = default;
+                return;
+            }
+
+            self.BindingPuzzle = puzzle;
+        }
+
+        /// <summary>
+        /// 清空当前 Grid Slot 的 Puzzle 绑定关系。
+        /// </summary>
+        /// <param name="self">要清空绑定的 Slot。</param>
+        public static void ClearBindingPuzzle(this Slot self)
+        {
+            self.BindingPuzzle = default;
         }
     }
 }

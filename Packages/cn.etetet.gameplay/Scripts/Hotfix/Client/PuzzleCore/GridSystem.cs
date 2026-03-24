@@ -31,7 +31,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Grid 中添加一个棋盘格 Slot。
+        /// 向 Grid 中添加一个棋盘格 Slot，并在数据创建完成后通知表现层生成 SlotView。
         /// </summary>
         public static Slot AddSlot(this Grid self, int x, int y, SlotType kind)
         {
@@ -52,6 +52,8 @@ namespace ET.Client
             }
 
             Slot slot = self.AddChildWithId<Slot, int, int, SlotType>(slotId, x, y, kind);
+            slot.AddComponent<GridSlotStateComponent>();
+            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
             self.RefreshStatistics();
             return slot;
         }
@@ -75,7 +77,7 @@ namespace ET.Client
                     }
 
                     ++placeableCount;
-                    if (slot.OccupyPuzzleId != 0)
+                    if (slot.GetBindingPuzzle() != null)
                     {
                         ++occupiedCount;
                     }

@@ -30,5 +30,10 @@ namespace ET.Client
         /// 拼图锚点在 Grid 坐标系中的 Y 坐标。
         /// </summary>
         public int AnchorY { get; set; }
+
+        /// <summary>
+        /// 当前拼图原点 Slot 的实体 Id。
+        /// </summary>
+        public long OriginSlotId { get; set; }
     }
 }

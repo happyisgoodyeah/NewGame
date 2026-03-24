@@ -22,8 +22,8 @@ namespace ET.Client
         public SlotType Kind { get; set; }
 
         /// <summary>
-        /// 当前占用该格子的 Puzzle.Id，仅对 Grid 下的可放置格子有意义。
+        /// 当前绑定到该 Grid Slot 的 Puzzle 引用，仅对 Grid 下的可放置格子有意义。
         /// </summary>
-        public long OccupyPuzzleId { get; set; }
+        public EntityRef<Puzzle> BindingPuzzle { get; set; }
     }
 }

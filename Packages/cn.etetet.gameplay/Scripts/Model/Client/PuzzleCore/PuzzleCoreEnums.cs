@@ -72,4 +72,35 @@ namespace ET.Client
         /// </summary>
         PuzzleFilled = 3,
     }
+
+    /// <summary>
+    /// Puzzle 放置判定的结果类型。
+    /// </summary>
+    public enum PuzzlePlacementCheckResult : byte
+    {
+        /// <summary>
+        /// 判定成功，可以应用放置。
+        /// </summary>
+        Success = 0,
+
+        /// <summary>
+        /// 目标位置超出 Grid 边界。
+        /// </summary>
+        OutOfGrid = 1,
+
+        /// <summary>
+        /// 目标位置存在不可放置格。
+        /// </summary>
+        Blocked = 2,
+
+        /// <summary>
+        /// 目标位置已被其他 Puzzle 占用。
+        /// </summary>
+        Occupied = 3,
+
+        /// <summary>
+        /// 判定所需数据缺失或非法。
+        /// </summary>
+        Invalid = 4,
+    }
 }

@@ -72,11 +72,19 @@
 - 数据驱动表现的常见方式不是“只有数据和表现两层”，而是:
   - 配置生成运行时实体
   - 运行时实体驱动 View / 表现组件
+- View 命名保持简洁:
+  - 表现层组件优先命名为 `GridView`、`PuzzleView`、`SlotView`
+  - 不额外追加 `Component` 后缀；其本质仍然是 ET `Component`
+- 数据层驱动表现层:
+  - `Grid`、`Puzzle`、`Slot` 等数据实体创建后，优先通过事件通知表现层生成对应 `View`
+  - 避免由场景总控或某个父级 `View` 直接代替子数据批量创建全部表现
+  - 推荐模式是 `AfterCreateXxx -> CreateXxxView`
 
 ### 代码组织
 
 - 实体类优先只放数据
 - 逻辑优先放静态 `System` / `Handler` / `Helper`
+- 如果一个组件设计为通用复用能力，命名也应保持通用，避免带入当前项目或当前玩法的专属语义
 - 新功能优先组织为:
   - `Entity/Component`
   - `static partial *System`
@@ -91,6 +99,8 @@
   - 静态字段需要声明 `StaticField`
   - `Hotfix` 程序集中不允许声明非 `const` 静态字段
   - `Hotfix` 中需要静态只读数据时，优先改为局部变量、配置数据，或迁移到非 `Hotfix` 程序集
+  - 遇到 `ET0013` 静态类函数引用环依赖时，静态 `System/Helper` 之间必须改成单向依赖；不要在两个静态类里互相调用扩展函数，优先直接读取实体字段、父子关系或类型信息来完成判断
+  - 遇到 `ET0032` 时，`Model/ModelView` 程序集里声明的非 ET Object/Entity 类需要显式加 `[EnableClass]`，例如 `MonoBehaviour`、普通辅助类或桥接类，否则分析器会禁止声明
 
 ### 四层分工
 
@@ -129,6 +139,11 @@
   - `PlayerComponent`
   - `CurrentScenesComponent`
   - `YIUIMgrComponent`
+- ET 的 `Scene` 是 ET 数据树中的逻辑场景实体，不是 Unity 场景对象
+- Unity 的 `Scene` 属于 `UnityEngine.SceneManagement`
+- 需要获取 `Transform`、`GameObject`、场景根节点时，必须显式通过 Unity 场景 API 或场景桥接组件处理
+- 不要把 ET `Scene` 当作 Unity `Scene` 使用；代码中涉及两者时应明确区分命名，例如 `etScene` / `unityScene`
+- `GameObjectEntityRef` 是现成的 Unity 到 ET 桥接组件：挂在 `GameObject` 上后，可通过其 `Entity` 属性取回关联的 ET `Entity`；内部基于 `EntityRef<Entity>`，当实体已释放或 `InstanceId` 失效时会自动返回空，适合用于输入命中后的 `GameObject -> Entity` 反查
 
 ## 序列化
 

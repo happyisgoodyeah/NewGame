@@ -6,7 +6,7 @@ namespace ET.Client
     public static class PuzzleBootstrapHelper
     {
         /// <summary>
-        /// 在当前场景中创建默认 Grid 和其下所有 Slot。
+        /// 在当前场景中创建默认 Grid，并在数据创建完成后通知表现层生成 GridView。
         /// </summary>
         public static Grid CreateDefaultGrid(Scene scene)
         {
@@ -21,6 +21,7 @@ namespace ET.Client
             int width = defaultGridLayout.GetLength(1);
 
             Grid grid = scene.AddChildWithId<Grid, int, int>(PuzzleCoreConst.DefaultGridId, width, height);
+            EventSystem.Instance.Publish(scene, new AfterCreateGrid() { Grid = grid });
 
             for (int y = 0; y < height; ++y)
             {
@@ -34,6 +35,23 @@ namespace ET.Client
 
             Log.Info($"create default grid success: scene={scene.Name} size={width}x{height} placeable={grid.PlaceableCount} occupied={grid.OccupiedCount}");
             return grid;
+        }
+
+        /// <summary>
+        /// 在当前场景中创建一个默认的 1x1 Puzzle 数据，并在数据创建完成后通知表现层生成 PuzzleView。
+        /// </summary>
+        public static Puzzle CreateDefaultPuzzle(Scene scene, long puzzleId)
+        {
+            Puzzle existedPuzzle = scene.GetPuzzle(puzzleId);
+            if (existedPuzzle != null)
+            {
+                return existedPuzzle;
+            }
+
+            Puzzle puzzle = scene.AddChildWithId<Puzzle, int>(puzzleId, PuzzleCoreConst.DefaultPuzzleConfigId);
+            EventSystem.Instance.Publish(scene, new AfterCreatePuzzle() { Puzzle = puzzle });
+            puzzle.AddSlot(0, 0);
+            return puzzle;
         }
 
         /// <summary>
