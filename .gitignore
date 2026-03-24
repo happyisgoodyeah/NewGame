@@ -46,8 +46,8 @@ Publish/
 */TestResults/
 Assets/Generate/Model/Proto*
 Assets/Generate/Model/Excel*
-MongoDB/
 Unity.sln
 Unity.sln.DotSettings.user
+
 Assets/HybridCLR*
-Bundles/
+/Bundles
