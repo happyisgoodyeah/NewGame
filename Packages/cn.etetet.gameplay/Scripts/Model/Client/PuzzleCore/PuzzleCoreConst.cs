@@ -11,18 +11,13 @@ namespace ET.Client
         public const long DefaultGridId = 1;
 
         /// <summary>
-        /// 当前场景下默认左侧 Puzzle 的固定实体 Id。
+        /// 当前调试阶段固定读取的默认 Grid 配置 id。
         /// </summary>
-        public const long DefaultLeftPuzzleId = 1001;
+        public const int DefaultGridConfigId = 1001;
 
         /// <summary>
-        /// 当前场景下默认右侧 Puzzle 的固定实体 Id。
+        /// 当前场景下动态创建 Puzzle 实体时使用的起始 Id。
         /// </summary>
-        public const long DefaultRightPuzzleId = 1002;
-
-        /// <summary>
-        /// 当前调试阶段使用的默认拼图配置 id。
-        /// </summary>
-        public const int DefaultPuzzleConfigId = 1001;
+        public const long DefaultPuzzleEntityIdStart = 1000;
     }
 }

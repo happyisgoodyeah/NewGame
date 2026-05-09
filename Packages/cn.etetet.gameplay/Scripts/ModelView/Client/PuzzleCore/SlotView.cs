@@ -24,11 +24,6 @@ namespace ET.Client
         public Collider2D Collider2D { get; set; }
 
         /// <summary>
-        /// 当前 Slot 对应的碰撞标记组件。
-        /// </summary>
-        public CollisionMarker CollisionMarker { get; set; }
-
-        /// <summary>
         /// 当前绑定对象是否由 SlotView 在运行时实例化。
         /// </summary>
         public bool OwnsGameObject { get; set; }

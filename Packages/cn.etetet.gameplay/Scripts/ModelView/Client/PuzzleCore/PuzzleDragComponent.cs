@@ -65,6 +65,11 @@ namespace ET.Client
         public int SnapAnchorY { get; set; }
 
         /// <summary>
+        /// 当前 GridSnap 模式下的外围吸附区域值。
+        /// </summary>
+        public byte SnapRegion { get; set; }
+
+        /// <summary>
         /// 当前拖拽过程中是否已经进入 GridSnap 模式。
         /// </summary>
         public bool IsGridSnapActive { get; set; }

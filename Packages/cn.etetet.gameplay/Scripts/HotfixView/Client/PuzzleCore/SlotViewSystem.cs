@@ -33,14 +33,23 @@ namespace ET.Client
         [EntitySystem]
         private static void Destroy(this SlotView self)
         {
-            if (self.OwnsGameObject && self.GameObject != null)
+            if (!self.OwnsGameObject || self.GameObject == null)
             {
-                UnityEngine.Object.Destroy(self.GameObject);
+                return;
             }
+
+            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
+            if (loadComponent != null)
+            {
+                loadComponent.ReleaseInstantiate(self.GameObject);
+                return;
+            }
+
+            UnityEngine.Object.Destroy(self.GameObject);
         }
 
         /// <summary>
-        /// 为 Grid Slot 实例化单独的 Slot1001 prefab。
+        /// 为 Grid Slot 实例化配置指定的 Slot prefab。
         /// </summary>
         private static void BindGridSlotView(this SlotView self, Slot slot)
         {
@@ -51,13 +60,15 @@ namespace ET.Client
                 throw new UnityException("grid view is required before creating grid slot view");
             }
 
-            GameObject prefab = Resources.Load<GameObject>(PuzzleViewConst.GridSlotPrefabPath);
-            if (prefab == null)
+            SlotConfig slotConfig = PuzzleConfigHelper.GetSlotConfig(slot.SlotConfigId);
+            string assetLocation = PuzzleAssetPathHelper.ToAssetLocation(slotConfig.PrefabPath);
+            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, assetLocation);
+            if (instance == null)
             {
-                throw new UnityException($"grid slot prefab not found: {PuzzleViewConst.GridSlotPrefabPath}");
+                throw new UnityException($"grid slot prefab not found: {assetLocation}");
             }
 
-            GameObject instance = UnityEngine.Object.Instantiate(prefab, gridView.SlotRoot, false);
+            instance.transform.SetParent(gridView.SlotRoot, false);
             instance.name = $"GridSlot_{slot.X}_{slot.Y}";
             instance.transform.localPosition = gridView.GetLocalPosition(slot);
 
@@ -71,11 +82,10 @@ namespace ET.Client
 
             self.OwnsGameObject = true;
             self.BindEntityReference();
-            self.BindCollisionMarker(CollisionMarkerGroup.GridSlot, true);
         }
 
         /// <summary>
-        /// 为 Puzzle Slot 绑定 Puzzle prefab 内已经存在的结构节点。
+        /// 为 Puzzle Slot 绑定 Puzzle prefab 内已存在的对应结构节点。
         /// </summary>
         private static void BindPuzzleSlotView(this SlotView self, Slot slot)
         {
@@ -86,13 +96,12 @@ namespace ET.Client
                 throw new UnityException("puzzle view is required before binding puzzle slot view");
             }
 
-            Transform slotAnchor = puzzleView.SlotAnchorTransform != null ? puzzleView.SlotAnchorTransform : puzzleView.Transform;
-            self.GameObject = slotAnchor.gameObject;
-            self.Transform = slotAnchor;
-            self.Collider2D = slotAnchor.GetComponent<Collider2D>();
+            Transform slotAnchor = puzzleView.GetSlotAnchorTransform(slot);
+            self.GameObject = slotAnchor != null ? slotAnchor.gameObject : puzzleView.GameObject;
+            self.Transform = slotAnchor != null ? slotAnchor : puzzleView.Transform;
+            self.Collider2D = self.Transform != null ? self.Transform.GetComponent<Collider2D>() : null;
             self.OwnsGameObject = false;
             self.BindEntityReference();
-            self.BindCollisionMarker(CollisionMarkerGroup.PuzzleSlot, true);
         }
 
         /// <summary>
@@ -112,31 +121,12 @@ namespace ET.Client
                 entityRef = self.GameObject.AddComponent<GameObjectEntityRef>();
             }
 
+            if (entityRef == null)
+            {
+                throw new UnityException($"failed to add GameObjectEntityRef on slot object: {self.GameObject.name}");
+            }
+
             entityRef.Entity = self;
-        }
-
-        /// <summary>
-        /// 为当前 SlotView 绑定对象挂载通用碰撞标记。
-        /// </summary>
-        /// <param name="self">当前 SlotView。</param>
-        /// <param name="group">碰撞分组。</param>
-        /// <param name="primary">是否为主碰撞体。</param>
-        private static void BindCollisionMarker(this SlotView self, string group, bool primary)
-        {
-            if (self.GameObject == null)
-            {
-                return;
-            }
-
-            CollisionMarker collisionMarker = self.GameObject.GetComponent<CollisionMarker>();
-            if (collisionMarker == null)
-            {
-                collisionMarker = self.GameObject.AddComponent<CollisionMarker>();
-            }
-
-            collisionMarker.Group = group;
-            collisionMarker.Primary = primary;
-            self.CollisionMarker = collisionMarker;
         }
     }
 }

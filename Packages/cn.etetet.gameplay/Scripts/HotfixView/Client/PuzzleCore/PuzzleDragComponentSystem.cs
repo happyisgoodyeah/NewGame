@@ -10,8 +10,8 @@ namespace ET.Client
     [EntitySystemOf(typeof(PuzzleDragComponent))]
     public static partial class PuzzleDragComponentSystem
     {
-        private const float FollowTweenDuration = 0.18f;
-        private const float GridStepThreshold = 0.5f;
+        private const float FollowTweenDuration = 0.1f;
+        private const float SnapStepThreshold = 0.5f;
 
         /// <summary>
         /// 初始化拖拽状态。
@@ -30,6 +30,7 @@ namespace ET.Client
             self.MoveTween = null;
             self.SnapAnchorX = 0;
             self.SnapAnchorY = 0;
+            self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
         }
 
@@ -51,6 +52,7 @@ namespace ET.Client
             self.MoveTween = null;
             self.SnapAnchorX = 0;
             self.SnapAnchorY = 0;
+            self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
         }
 
@@ -76,10 +78,22 @@ namespace ET.Client
             self.DragStartAnchorX = puzzle.AnchorX;
             self.DragStartAnchorY = puzzle.AnchorY;
             self.LastPointerWorldPosition = pointerContext.WorldPosition;
-            self.KillMoveTween();
-            self.PlayMoveTween(puzzleView, pointerContext.WorldPosition);
+            puzzleView.BringToFront();
 
             Grid grid = puzzle.Scene().GetGrid();
+            if (grid != null && puzzle.State == PuzzleState.Placed)
+            {
+                puzzle.ClearPlacement(grid);
+                self.SnapAnchorX = puzzle.AnchorX;
+                self.SnapAnchorY = puzzle.AnchorY;
+                self.SnapRegion = (byte)GridContactRegion.Center;
+                self.IsGridSnapActive = true;
+                puzzle.State = PuzzleState.Dragging;
+                puzzleView.MoveMode = PuzzleMoveMode.GridSnap;
+                return;
+            }
+
+            self.PlayMoveTween(puzzleView, pointerContext.WorldPosition);
             if (grid != null)
             {
                 puzzle.ClearPlacement(grid);
@@ -136,6 +150,25 @@ namespace ET.Client
         }
 
         /// <summary>
+        /// 判断当前 GridSnap 预览是否已经进入真正覆盖 Slot 的可提交状态。
+        /// </summary>
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        /// <returns>当前是否允许在松手时提交放置。</returns>
+        public static bool CanFinalizeGridSnap(this PuzzleDragComponent self)
+        {
+            if (!self.IsGridSnapActive)
+            {
+                return false;
+            }
+
+            Puzzle puzzle = self.GetParent<Puzzle>();
+            Grid grid = puzzle?.Scene().GetGrid();
+            return puzzle != null
+                    && grid != null
+                    && puzzle.CheckPlacement(grid, self.SnapAnchorX, self.SnapAnchorY, out List<Slot> _) == PuzzlePlacementCheckResult.Success;
+        }
+
+        /// <summary>
         /// 将当前拼图平滑吸附到其原点格对应的 Grid 中心点。
         /// </summary>
         /// <param name="self">当前拼图的拖拽组件。</param>
@@ -145,14 +178,28 @@ namespace ET.Client
             Puzzle puzzle = self.GetParent<Puzzle>();
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
             GridView gridView = grid?.GetComponent<GridView>();
-            Slot anchorGridSlot = grid?.GetSlot(puzzle.AnchorX, puzzle.AnchorY);
-            if (puzzleView == null || puzzleView.Transform == null || gridView == null || anchorGridSlot == null)
+            int anchorX = self.IsGridSnapActive ? self.SnapAnchorX : puzzle.AnchorX;
+            int anchorY = self.IsGridSnapActive ? self.SnapAnchorY : puzzle.AnchorY;
+            if (puzzleView == null || puzzleView.Transform == null || gridView == null)
             {
                 self.ClearDragState();
                 return;
             }
 
-            self.PlayMoveTween(puzzleView, gridView.GetSlotWorldPosition(anchorGridSlot));
+            if (puzzle.CheckPlacement(grid, anchorX, anchorY, out List<Slot> matchedGridSlots) != PuzzlePlacementCheckResult.Success)
+            {
+                self.ClearDragState();
+                return;
+            }
+
+            if (self.IsGridSnapActive || puzzle.State != PuzzleState.Placed)
+            {
+                puzzle.ApplyPlacement(grid, anchorX, anchorY, matchedGridSlots);
+            }
+
+            puzzle.State = PuzzleState.Placed;
+            puzzleView.RestoreVisualPriority();
+            self.PlayMoveTweenToOrigin(puzzleView, gridView.GetGridCoordinateWorldPosition(anchorX, anchorY));
             self.ClearDragState();
         }
 
@@ -163,6 +210,7 @@ namespace ET.Client
         public static void RestoreDragStart(this PuzzleDragComponent self)
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
+            self.ClearPreviewPlacementReservation();
             puzzle.State = self.DragStartState;
             puzzle.AnchorX = self.DragStartAnchorX;
             puzzle.AnchorY = self.DragStartAnchorY;
@@ -170,6 +218,7 @@ namespace ET.Client
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
             if (puzzleView != null && puzzleView.Transform != null)
             {
+                puzzleView.RestoreVisualPriority();
                 self.PlayMoveTween(puzzleView, self.DragStartWorldPosition);
             }
 
@@ -177,20 +226,27 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 将当前拼图恢复到初始生成时的位置，并回到 Tray 状态。
+        /// 将当前拼图恢复到初始生成时的位置，并重置为默认朝向。
         /// </summary>
         /// <param name="self">当前拼图的拖拽组件。</param>
         public static void RestoreInitialPosition(this PuzzleDragComponent self)
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
+            self.ClearPreviewPlacementReservation();
             puzzle.State = PuzzleState.Tray;
             puzzle.AnchorX = 0;
             puzzle.AnchorY = 0;
+            puzzle.SetRotation(PuzzleRotation.Rotate0);
 
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
-            if (puzzleView != null && puzzleView.Transform != null && self.HasInitialWorldPosition)
+            if (puzzleView != null && puzzleView.Transform != null)
             {
-                self.PlayMoveTween(puzzleView, self.InitialWorldPosition);
+                puzzleView.RestoreVisualPriority();
+                puzzleView.RefreshRotation();
+                if (self.HasInitialWorldPosition)
+                {
+                    self.PlayMoveTween(puzzleView, self.InitialWorldPosition);
+                }
             }
 
             self.ClearDragState();
@@ -216,7 +272,8 @@ namespace ET.Client
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
-            if (puzzleView == null || puzzleView.Transform == null)
+            GridView gridView = grid.GetComponent<GridView>();
+            if (puzzleView == null || puzzleView.Transform == null || gridView == null)
             {
                 return;
             }
@@ -225,22 +282,18 @@ namespace ET.Client
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
 
-            if (!puzzle.TryResolveSnapTarget(grid, out PuzzleGridSnapTarget snapTarget))
+            if (!puzzle.TryResolveEntrySnapTarget(grid, out PuzzleGridSnapTarget snapTarget))
             {
                 return;
             }
 
-            if (puzzle.CheckPlacement(grid, snapTarget.AnchorX, snapTarget.AnchorY, out List<Slot> matchedGridSlots) != PuzzlePlacementCheckResult.Success)
-            {
-                return;
-            }
-
-            puzzle.ApplyPlacement(grid, snapTarget.AnchorX, snapTarget.AnchorY, matchedGridSlots);
+            puzzle.ClearPlacement(grid);
             self.SnapAnchorX = snapTarget.AnchorX;
             self.SnapAnchorY = snapTarget.AnchorY;
+            self.SnapRegion = (byte)snapTarget.Region;
             self.IsGridSnapActive = true;
             puzzleView.MoveMode = PuzzleMoveMode.GridSnap;
-            self.PlayMoveTween(puzzleView, grid.GetComponent<GridView>().GetSlotWorldPosition(snapTarget.GridSlot));
+            self.ApplyPreviewAnchorPosition(puzzleView, gridView, snapTarget.AnchorX, snapTarget.AnchorY);
         }
 
         /// <summary>
@@ -254,16 +307,30 @@ namespace ET.Client
             Puzzle puzzle = self.GetParent<Puzzle>();
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
             GridView gridView = grid.GetComponent<GridView>();
-            Slot currentAnchorSlot = grid.GetSlot(self.SnapAnchorX, self.SnapAnchorY);
-            if (puzzleView == null || gridView == null || currentAnchorSlot == null)
+            if (puzzleView == null || gridView == null)
             {
                 return;
             }
 
-            Vector3 anchorWorldPosition = gridView.GetSlotWorldPosition(currentAnchorSlot);
-            Vector3 deltaWorldPosition = pointerWorldPosition - anchorWorldPosition;
-            int deltaX = ResolveStepDelta(deltaWorldPosition.x, gridView.CellSize);
-            int deltaY = ResolveStepDelta(-deltaWorldPosition.y, gridView.CellSize);
+            Vector3 snapReferenceWorldPosition = gridView.GetGridCoordinateWorldPosition(self.SnapAnchorX, self.SnapAnchorY);
+            if (!puzzle.IsFullyInsideGrid(grid) && !puzzle.IsPointerInsideAdsorptionRange(grid, gridView, pointerWorldPosition))
+            {
+                puzzle.ClearPlacement(grid);
+                puzzle.State = PuzzleState.Dragging;
+                puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
+                self.IsGridSnapActive = false;
+                self.PlayMoveTween(puzzleView, pointerWorldPosition);
+                return;
+            }
+
+            if (IsPointInsideSnapRange(snapReferenceWorldPosition, pointerWorldPosition, gridView.CellSize))
+            {
+                self.ApplyPreviewAnchorPosition(puzzleView, gridView, self.SnapAnchorX, self.SnapAnchorY);
+                return;
+            }
+
+            PuzzleSnapDirection direction = PuzzleGridSnapResolver.ResolveSnapDirection(snapReferenceWorldPosition, pointerWorldPosition, true);
+            PuzzleGridSnapResolver.GetDirectionDelta(direction, out int deltaX, out int deltaY);
             if (deltaX == 0 && deltaY == 0)
             {
                 return;
@@ -275,27 +342,30 @@ namespace ET.Client
             PuzzlePlacementCheckResult checkResult = puzzle.CheckPlacement(grid, targetAnchorX, targetAnchorY, out List<Slot> matchedGridSlots);
             if (checkResult == PuzzlePlacementCheckResult.Success)
             {
-                puzzle.ApplyPlacement(grid, targetAnchorX, targetAnchorY, matchedGridSlots);
+                self.ApplyPreviewPlacement(puzzle, grid, targetAnchorX, targetAnchorY, matchedGridSlots);
                 self.SnapAnchorX = targetAnchorX;
                 self.SnapAnchorY = targetAnchorY;
+                self.SnapRegion = (byte)GridContactRegion.Center;
                 puzzleView.MoveMode = PuzzleMoveMode.GridSnap;
-                self.PlayMoveTween(puzzleView, gridView.GetSlotWorldPosition(grid.GetSlot(targetAnchorX, targetAnchorY)));
+                self.ApplyPreviewAnchorPosition(puzzleView, gridView, targetAnchorX, targetAnchorY);
                 return;
             }
 
-            if (checkResult == PuzzlePlacementCheckResult.OutOfGrid)
+            if (puzzle.IsPointerInsideAdsorptionRange(grid, gridView, pointerWorldPosition))
             {
+                self.SnapAnchorX = targetAnchorX;
+                self.SnapAnchorY = targetAnchorY;
+                self.SnapRegion = (byte)ResolveAnchorRegion(grid, targetAnchorX, targetAnchorY);
                 puzzle.State = PuzzleState.Dragging;
-                puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
-                self.IsGridSnapActive = false;
-                self.PlayMoveTween(puzzleView, pointerWorldPosition);
+                puzzleView.MoveMode = PuzzleMoveMode.GridSnap;
+                self.ApplyPreviewAnchorPosition(puzzleView, gridView, targetAnchorX, targetAnchorY);
                 return;
             }
 
-            if (puzzle.CheckPlacement(grid, self.SnapAnchorX, self.SnapAnchorY, out List<Slot> restoreSlots) == PuzzlePlacementCheckResult.Success)
-            {
-                puzzle.ApplyPlacement(grid, self.SnapAnchorX, self.SnapAnchorY, restoreSlots);
-            }
+            puzzle.State = PuzzleState.Dragging;
+            puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
+            self.IsGridSnapActive = false;
+            self.PlayMoveTween(puzzleView, pointerWorldPosition);
         }
 
         /// <summary>
@@ -305,11 +375,12 @@ namespace ET.Client
         public static void FinalizeGridSnap(this PuzzleDragComponent self)
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
-            if (self.IsGridSnapActive)
+            Grid grid = puzzle?.Scene().GetGrid();
+            if (self.IsGridSnapActive
+                    && grid != null
+                    && puzzle.CheckPlacement(grid, self.SnapAnchorX, self.SnapAnchorY, out List<Slot> matchedGridSlots) == PuzzlePlacementCheckResult.Success)
             {
-                puzzle.State = PuzzleState.Placed;
-                puzzle.AnchorX = self.SnapAnchorX;
-                puzzle.AnchorY = self.SnapAnchorY;
+                puzzle.ApplyPlacement(grid, self.SnapAnchorX, self.SnapAnchorY, matchedGridSlots);
             }
 
             self.ClearDragState();
@@ -333,6 +404,105 @@ namespace ET.Client
         }
 
         /// <summary>
+        /// 将目标原点格世界坐标转换为 PuzzleView 根节点轨迹后应用 Tween。
+        /// </summary>
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        /// <param name="puzzleView">要被移动的拼图表现层。</param>
+        /// <param name="targetOriginWorldPosition">目标原点格世界坐标。</param>
+        private static void PlayMoveTweenToOrigin(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetOriginWorldPosition)
+        {
+            Vector3 currentOriginWorldPosition = puzzleView.GetOriginWorldPosition();
+            Vector3 rootTargetWorldPosition = puzzleView.Transform.position + (targetOriginWorldPosition - currentOriginWorldPosition);
+            self.PlayMoveTween(puzzleView, rootTargetWorldPosition);
+        }
+
+        /// <summary>
+        /// 将当前拼图原点吸附到指定 Grid 离散坐标，坐标允许落在 Grid 外用于外圈预览。
+        /// </summary>
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        /// <param name="puzzleView">要被移动的拼图表现层。</param>
+        /// <param name="gridView">目标 Grid 的表现层。</param>
+        /// <param name="anchorX">候选原点在 Grid 坐标系中的 X 坐标。</param>
+        /// <param name="anchorY">候选原点在 Grid 坐标系中的 Y 坐标。</param>
+        private static void ApplyPreviewAnchorPosition(this PuzzleDragComponent self, PuzzleView puzzleView, GridView gridView, int anchorX, int anchorY)
+        {
+            Vector3 previewWorldPosition = gridView.GetGridCoordinateWorldPosition(anchorX, anchorY);
+            self.KillMoveTween();
+            puzzleView.SetOriginWorldPosition(previewWorldPosition);
+        }
+
+        /// <summary>
+        /// 根据当前原点坐标相对 Grid 边界的位置，折算为外圈吸附区域。
+        /// </summary>
+        /// <param name="grid">目标 Grid。</param>
+        /// <param name="anchorX">当前原点 X 坐标。</param>
+        /// <param name="anchorY">当前原点 Y 坐标。</param>
+        /// <returns>当前原点所处的边界区域。</returns>
+        private static GridContactRegion ResolveAnchorRegion(Grid grid, int anchorX, int anchorY)
+        {
+            if (grid == null || grid.Contains(anchorX, anchorY))
+            {
+                return GridContactRegion.Center;
+            }
+
+            bool isLeft = anchorX < 0;
+            bool isRight = anchorX >= grid.Width;
+            bool isTop = anchorY < 0;
+            bool isBottom = anchorY >= grid.Height;
+            if (isLeft && isTop)
+            {
+                return GridContactRegion.LeftTop;
+            }
+
+            if (isRight && isTop)
+            {
+                return GridContactRegion.RightTop;
+            }
+
+            if (isLeft && isBottom)
+            {
+                return GridContactRegion.LeftBottom;
+            }
+
+            if (isRight && isBottom)
+            {
+                return GridContactRegion.RightBottom;
+            }
+
+            if (isLeft)
+            {
+                return GridContactRegion.Left;
+            }
+
+            if (isRight)
+            {
+                return GridContactRegion.Right;
+            }
+
+            if (isTop)
+            {
+                return GridContactRegion.Top;
+            }
+
+            return GridContactRegion.Bottom;
+        }
+
+        /// <summary>
+        /// 将一组合法格位作为拖拽中的预览占用应用到 Grid，并保持 Puzzle 仍处于 Dragging 状态。
+        /// </summary>
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        /// <param name="puzzle">当前正在拖拽的 Puzzle。</param>
+        /// <param name="grid">目标 Grid。</param>
+        /// <param name="anchorX">预览原点格的 X 坐标。</param>
+        /// <param name="anchorY">预览原点格的 Y 坐标。</param>
+        /// <param name="matchedGridSlots">本次预览占用涉及的 Grid Slot 集合。</param>
+        private static void ApplyPreviewPlacement(this PuzzleDragComponent self, Puzzle puzzle, Grid grid, int anchorX, int anchorY, List<Slot> matchedGridSlots)
+        {
+            puzzle.ApplyPlacement(grid, anchorX, anchorY, matchedGridSlots);
+            puzzle.State = PuzzleState.Dragging;
+        }
+
+        /// <summary>
         /// 在第一次参与拖拽时缓存 Puzzle 的初始生成位置。
         /// </summary>
         /// <param name="self">当前拼图的拖拽组件。</param>
@@ -349,25 +519,35 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 解析某个轴在 GridSnap 模式下是否应走出一步。
+        /// 清理当前拖拽过程在 Grid 上保留的预览占用。
         /// </summary>
-        /// <param name="axisDelta">当前鼠标相对原点格中心在该轴上的位移。</param>
-        /// <param name="cellSize">当前格子的边长。</param>
-        /// <returns>本帧该轴的离散步进值。</returns>
-        private static int ResolveStepDelta(float axisDelta, float cellSize)
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        private static void ClearPreviewPlacementReservation(this PuzzleDragComponent self)
         {
-            float threshold = cellSize * GridStepThreshold;
-            if (axisDelta > threshold)
+            Puzzle puzzle = self.GetParent<Puzzle>();
+            Grid grid = puzzle?.Scene().GetGrid();
+            if (puzzle == null || grid == null)
             {
-                return 1;
+                return;
             }
 
-            if (axisDelta < -threshold)
-            {
-                return -1;
-            }
+            puzzle.ClearPlacement(grid);
+        }
 
-            return 0;
+        /// <summary>
+        /// 判断指针是否仍处于当前吸附参考点的半格范围内。
+        /// </summary>
+        /// <param name="originWorldPosition">吸附参考世界坐标。</param>
+        /// <param name="pointerWorldPosition">当前指针世界坐标。</param>
+        /// <param name="cellSize">当前格子边长。</param>
+        /// <returns>指针是否还没有越过步进阈值。</returns>
+        private static bool IsPointInsideSnapRange(Vector3 originWorldPosition, Vector3 pointerWorldPosition, float cellSize)
+        {
+            float threshold = cellSize * SnapStepThreshold;
+            return pointerWorldPosition.x >= originWorldPosition.x - threshold
+                    && pointerWorldPosition.x <= originWorldPosition.x + threshold
+                    && pointerWorldPosition.y >= originWorldPosition.y - threshold
+                    && pointerWorldPosition.y <= originWorldPosition.y + threshold;
         }
 
         /// <summary>
@@ -403,6 +583,7 @@ namespace ET.Client
             self.LastPointerWorldPosition = Vector3.zero;
             self.SnapAnchorX = 0;
             self.SnapAnchorY = 0;
+            self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
         }
     }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ET.Client
@@ -39,9 +40,14 @@ namespace ET.Client
         public Rigidbody2D Rigidbody2D { get; set; }
 
         /// <summary>
-        /// 当前默认 1x1 Puzzle 对应的 Slot 锚点。
+        /// 当前 Puzzle 原点格默认对应的 Slot 锚点。
         /// </summary>
         public Transform SlotAnchorTransform { get; set; }
+
+        /// <summary>
+        /// 当前 Puzzle prefab 中可用于匹配形状格的全部 Slot 锚点。
+        /// </summary>
+        public List<Transform> SlotAnchorTransforms { get; set; }
 
         /// <summary>
         /// 当前 Puzzle 表现层采用的移动模式。

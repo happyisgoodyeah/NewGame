@@ -7,6 +7,11 @@ namespace ET.Client
     public class Slot : Entity, IAwake<int, int, SlotType>
     {
         /// <summary>
+        /// 当前 Slot 对应的配置表 id，仅对 Grid Slot 有意义。
+        /// </summary>
+        public int SlotConfigId { get; set; }
+
+        /// <summary>
         /// Slot 在父节点局部坐标系中的 X 坐标。
         /// </summary>
         public int X { get; set; }

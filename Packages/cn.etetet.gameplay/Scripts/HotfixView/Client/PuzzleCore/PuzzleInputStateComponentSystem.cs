@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace ET.Client
 {
     /// <summary>
@@ -13,6 +15,9 @@ namespace ET.Client
         private static void Awake(this PuzzleInputStateComponent self)
         {
             self.DraggingPuzzle = default;
+            self.PendingPressPuzzle = default;
+            self.PendingPressScreenPosition = Vector2.zero;
+            self.PendingPressWorldPosition = Vector3.zero;
         }
 
         /// <summary>
@@ -22,6 +27,9 @@ namespace ET.Client
         private static void Destroy(this PuzzleInputStateComponent self)
         {
             self.DraggingPuzzle = default;
+            self.PendingPressPuzzle = default;
+            self.PendingPressScreenPosition = Vector2.zero;
+            self.PendingPressWorldPosition = Vector3.zero;
         }
 
         /// <summary>
@@ -67,6 +75,52 @@ namespace ET.Client
         public static void ClearDraggingPuzzle(this PuzzleInputStateComponent self)
         {
             self.DraggingPuzzle = default;
+        }
+
+        /// <summary>
+        /// 记录一次新的待确认按压。
+        /// </summary>
+        /// <param name="self">当前场景的 Puzzle 输入状态组件。</param>
+        /// <param name="puzzle">本次按下命中的 Puzzle。</param>
+        /// <param name="screenPosition">按下时的屏幕坐标。</param>
+        /// <param name="worldPosition">按下时的世界坐标。</param>
+        public static void SetPendingPress(this PuzzleInputStateComponent self, Puzzle puzzle, Vector2 screenPosition, Vector3 worldPosition)
+        {
+            self.PendingPressPuzzle = puzzle;
+            self.PendingPressScreenPosition = screenPosition;
+            self.PendingPressWorldPosition = worldPosition;
+        }
+
+        /// <summary>
+        /// 获取当前待确认按压对应的 Puzzle。
+        /// </summary>
+        /// <param name="self">当前场景的 Puzzle 输入状态组件。</param>
+        /// <returns>当前待确认按压对应的 Puzzle；若不存在则返回空。</returns>
+        public static Puzzle GetPendingPressPuzzle(this PuzzleInputStateComponent self)
+        {
+            return self.PendingPressPuzzle;
+        }
+
+        /// <summary>
+        /// 判断当前待确认按压是否已超过正式拖拽阈值。
+        /// </summary>
+        /// <param name="self">当前场景的 Puzzle 输入状态组件。</param>
+        /// <param name="screenPosition">当前鼠标屏幕坐标。</param>
+        /// <returns>当前是否应进入正式拖拽。</returns>
+        public static bool HasExceededDragThreshold(this PuzzleInputStateComponent self, Vector2 screenPosition)
+        {
+            return Vector2.Distance(self.PendingPressScreenPosition, screenPosition) > PuzzleViewConst.DragStartScreenThreshold;
+        }
+
+        /// <summary>
+        /// 清空当前待确认按压记录。
+        /// </summary>
+        /// <param name="self">当前场景的 Puzzle 输入状态组件。</param>
+        public static void ClearPendingPress(this PuzzleInputStateComponent self)
+        {
+            self.PendingPressPuzzle = default;
+            self.PendingPressScreenPosition = Vector2.zero;
+            self.PendingPressWorldPosition = Vector3.zero;
         }
     }
 }

@@ -6,6 +6,7 @@ namespace ET.Client
         [EntitySystem]
         private static void Awake(this Slot self, int x, int y, SlotType kind)
         {
+            self.SlotConfigId = 0;
             self.X = x;
             self.Y = y;
             self.Kind = kind;

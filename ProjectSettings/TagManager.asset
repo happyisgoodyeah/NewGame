@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Grid
   layers:
   - Default
   - TransparentFX
@@ -47,9 +48,9 @@ TagManager:
   - name: Grid
     uniqueID: 2784426703
     locked: 0
-  - name: Puzzle
-    uniqueID: 1812598945
-    locked: 0
   - name: Slot
     uniqueID: 3474293191
+    locked: 0
+  - name: Puzzle
+    uniqueID: 1812598945
     locked: 0

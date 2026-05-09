@@ -15,18 +15,20 @@ namespace ET.Client
         private static void Awake(this GridView self, Vector3 localPosition, float cellSize)
         {
             PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
-            GameObject prefab = Resources.Load<GameObject>(PuzzleViewConst.GridPrefabPath);
-            if (prefab == null)
+            GridConfig gridConfig = PuzzleConfigHelper.GetGridConfig(self.GetParent<Grid>().GridConfigId);
+            string assetLocation = PuzzleAssetPathHelper.ToAssetLocation(gridConfig.PrefabPath);
+            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, assetLocation);
+            if (instance == null)
             {
-                throw new UnityException($"grid prefab not found: {PuzzleViewConst.GridPrefabPath}");
+                throw new UnityException($"grid prefab not found: {assetLocation}");
             }
 
-            GameObject root = UnityEngine.Object.Instantiate(prefab, puzzleSceneRoot.GridRoot, false);
-            root.name = $"{prefab.name}_{self.GetParent<Grid>().Id}";
-            root.transform.localPosition = localPosition;
+            instance.transform.SetParent(puzzleSceneRoot.GridRoot, false);
+            instance.name = $"{instance.name}_{self.GetParent<Grid>().Id}";
+            instance.transform.localPosition = localPosition;
 
-            Transform puzzleRoot = root.transform.Find("PuzzleTransform");
-            Transform slotRoot = root.transform.Find("SlotTransform");
+            Transform puzzleRoot = instance.transform.Find("PuzzleTransform");
+            Transform slotRoot = instance.transform.Find("SlotTransform");
             if (puzzleRoot == null || slotRoot == null)
             {
                 throw new UnityException("grid prefab must contain PuzzleTransform and SlotTransform");
@@ -38,14 +40,13 @@ namespace ET.Client
                 throw new UnityException("grid prefab SlotTransform must contain CompositeCollider2D");
             }
 
-            self.GameObject = root;
-            self.Transform = root.transform;
+            self.GameObject = instance;
+            self.Transform = instance.transform;
             self.PuzzleRoot = puzzleRoot;
             self.SlotRoot = slotRoot;
             self.CompositeCollider2D = compositeCollider2D;
             self.CellSize = cellSize;
-            self.BindEntityReference(root);
-            self.BindGridAreaMarker(slotRoot.gameObject);
+            self.BindEntityReference(instance);
         }
 
         /// <summary>
@@ -54,10 +55,19 @@ namespace ET.Client
         [EntitySystem]
         private static void Destroy(this GridView self)
         {
-            if (self.GameObject != null)
+            if (self.GameObject == null)
             {
-                UnityEngine.Object.Destroy(self.GameObject);
+                return;
             }
+
+            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
+            if (loadComponent != null)
+            {
+                loadComponent.ReleaseInstantiate(self.GameObject);
+                return;
+            }
+
+            UnityEngine.Object.Destroy(self.GameObject);
         }
 
         /// <summary>
@@ -65,10 +75,22 @@ namespace ET.Client
         /// </summary>
         public static Vector3 GetLocalPosition(this GridView self, Slot slot)
         {
+            return self.GetLocalPosition(slot.X, slot.Y);
+        }
+
+        /// <summary>
+        /// 计算指定 Grid 坐标在 GridRoot 下的局部位置，允许坐标落在 Grid 外一圈用于吸附预览。
+        /// </summary>
+        /// <param name="self">当前 Grid 的表现组件。</param>
+        /// <param name="x">目标 Grid X 坐标。</param>
+        /// <param name="y">目标 Grid Y 坐标。</param>
+        /// <returns>目标坐标对应的局部位置。</returns>
+        public static Vector3 GetLocalPosition(this GridView self, int x, int y)
+        {
             Grid grid = self.GetParent<Grid>();
-            float x = (slot.X - (grid.Width - 1) * 0.5f) * self.CellSize;
-            float y = ((grid.Height - 1) * 0.5f - slot.Y) * self.CellSize;
-            return new Vector3(x, y, 0f);
+            float localX = (x - (grid.Width - 1) * 0.5f) * self.CellSize;
+            float localY = ((grid.Height - 1) * 0.5f - y) * self.CellSize;
+            return new Vector3(localX, localY, 0f);
         }
 
         /// <summary>
@@ -79,8 +101,57 @@ namespace ET.Client
         /// <returns>目标 Grid Slot 中心点的世界坐标。</returns>
         public static Vector3 GetSlotWorldPosition(this GridView self, Slot slot)
         {
-            Vector3 localPosition = self.GetLocalPosition(slot);
+            return self.GetGridCoordinateWorldPosition(slot.X, slot.Y);
+        }
+
+        /// <summary>
+        /// 计算指定 Grid 坐标中心点在世界坐标系中的位置，允许坐标位于 Grid 外一圈。
+        /// </summary>
+        /// <param name="self">当前 Grid 的表现组件。</param>
+        /// <param name="x">目标 Grid X 坐标。</param>
+        /// <param name="y">目标 Grid Y 坐标。</param>
+        /// <returns>目标坐标中心点的世界坐标。</returns>
+        public static Vector3 GetGridCoordinateWorldPosition(this GridView self, int x, int y)
+        {
+            Vector3 localPosition = self.GetLocalPosition(x, y);
             return self.SlotRoot != null ? self.SlotRoot.TransformPoint(localPosition) : self.Transform.TransformPoint(localPosition);
+        }
+
+        /// <summary>
+        /// 计算某个 Grid Slot 对应的外围吸附停靠位世界坐标。
+        /// </summary>
+        /// <param name="self">当前 Grid 的表现组件。</param>
+        /// <param name="slot">当前候选原点格。</param>
+        /// <param name="region">外围吸附区域。</param>
+        /// <returns>当前边/角停靠位的世界坐标。</returns>
+        public static Vector3 GetPreviewSnapWorldPosition(this GridView self, Slot slot, GridContactRegion region)
+        {
+            Vector3 slotWorldPosition = self.GetSlotWorldPosition(slot);
+            Vector3 offset = region switch
+            {
+                GridContactRegion.Left => new Vector3(-self.CellSize, 0f, 0f),
+                GridContactRegion.Right => new Vector3(self.CellSize, 0f, 0f),
+                GridContactRegion.Top => new Vector3(0f, self.CellSize, 0f),
+                GridContactRegion.Bottom => new Vector3(0f, -self.CellSize, 0f),
+                GridContactRegion.LeftTop => new Vector3(-self.CellSize, self.CellSize, 0f),
+                GridContactRegion.RightTop => new Vector3(self.CellSize, self.CellSize, 0f),
+                GridContactRegion.LeftBottom => new Vector3(-self.CellSize, -self.CellSize, 0f),
+                GridContactRegion.RightBottom => new Vector3(self.CellSize, -self.CellSize, 0f),
+                _ => Vector3.zero,
+            };
+            return slotWorldPosition + offset;
+        }
+
+        /// <summary>
+        /// 获取当前 GridSnap 阶段用于计算鼠标步进的参考世界坐标。
+        /// </summary>
+        /// <param name="self">当前 Grid 的表现组件。</param>
+        /// <param name="slot">当前候选原点格。</param>
+        /// <param name="region">当前外围吸附区域。</param>
+        /// <returns>用于步进判定的参考世界坐标。</returns>
+        public static Vector3 GetSnapReferenceWorldPosition(this GridView self, Slot slot, GridContactRegion region)
+        {
+            return region == GridContactRegion.Center ? self.GetSlotWorldPosition(slot) : self.GetPreviewSnapWorldPosition(slot, region);
         }
 
         /// <summary>
@@ -101,29 +172,12 @@ namespace ET.Client
                 entityRef = targetGameObject.AddComponent<GameObjectEntityRef>();
             }
 
+            if (entityRef == null)
+            {
+                throw new UnityException($"failed to add GameObjectEntityRef on grid object: {targetGameObject.name}");
+            }
+
             entityRef.Entity = self;
-        }
-
-        /// <summary>
-        /// 为 Grid 的整体接触区域挂载通用碰撞标记。
-        /// </summary>
-        /// <param name="self">当前 GridView。</param>
-        /// <param name="targetGameObject">Grid 区域对象。</param>
-        private static void BindGridAreaMarker(this GridView self, GameObject targetGameObject)
-        {
-            if (targetGameObject == null)
-            {
-                return;
-            }
-
-            CollisionMarker collisionMarker = targetGameObject.GetComponent<CollisionMarker>();
-            if (collisionMarker == null)
-            {
-                collisionMarker = targetGameObject.AddComponent<CollisionMarker>();
-            }
-
-            collisionMarker.Group = CollisionMarkerGroup.GridArea;
-            collisionMarker.Primary = true;
         }
     }
 }

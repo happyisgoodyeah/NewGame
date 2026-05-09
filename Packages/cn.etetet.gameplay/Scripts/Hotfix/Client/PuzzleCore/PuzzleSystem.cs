@@ -9,6 +9,9 @@ namespace ET.Client
         private static void Awake(this Puzzle self, int puzzleConfigId)
         {
             self.PuzzleConfigId = puzzleConfigId;
+            self.InitialWorldPositionX = 0f;
+            self.InitialWorldPositionY = 0f;
+            self.InitialWorldPositionZ = 0f;
             self.Rotation = PuzzleRotation.Rotate0;
             self.State = PuzzleState.Tray;
             self.AnchorX = 0;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ET.Client
@@ -15,14 +16,14 @@ namespace ET.Client
         private static void Awake(this PuzzleView self, string prefabPath, Vector3 localPosition)
         {
             PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
-            GameObject prefab = Resources.Load<GameObject>(prefabPath);
-            if (prefab == null)
+            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, prefabPath);
+            if (instance == null)
             {
                 throw new UnityException($"puzzle prefab not found: {prefabPath}");
             }
 
-            GameObject instance = UnityEngine.Object.Instantiate(prefab, puzzleSceneRoot.SceneRoot, false);
-            instance.name = $"{prefab.name}_{self.GetParent<Puzzle>().Id}";
+            instance.transform.SetParent(puzzleSceneRoot.SceneRoot, false);
+            instance.name = $"{instance.name}_{self.GetParent<Puzzle>().Id}";
             instance.transform.localPosition = localPosition;
 
             self.GameObject = instance;
@@ -31,11 +32,12 @@ namespace ET.Client
             self.PolygonCollider2D = instance.GetComponent<PolygonCollider2D>();
             self.BodyCollider2D = self.PolygonCollider2D;
             self.Rigidbody2D = instance.GetComponent<Rigidbody2D>();
-            self.SlotAnchorTransform = self.FindSlotAnchorTransform();
+            self.SlotAnchorTransforms = self.FindSlotAnchorTransforms();
+            self.SlotAnchorTransform = self.FindOriginSlotAnchorTransform();
             self.MoveMode = PuzzleMoveMode.FreeFollow;
             self.BindEntityReference(instance);
-            self.BindCollisionMarker(instance, CollisionMarkerGroup.PuzzleBody, true);
-            self.BindSlotAnchorMarker();
+            self.RefreshRotation();
+            self.RestoreVisualPriority();
         }
 
         /// <summary>
@@ -44,38 +46,177 @@ namespace ET.Client
         [EntitySystem]
         private static void Destroy(this PuzzleView self)
         {
-            if (self.GameObject != null)
+            if (self.GameObject == null)
             {
-                UnityEngine.Object.Destroy(self.GameObject);
+                return;
             }
+
+            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
+            if (loadComponent != null)
+            {
+                loadComponent.ReleaseInstantiate(self.GameObject);
+                return;
+            }
+
+            UnityEngine.Object.Destroy(self.GameObject);
         }
 
         /// <summary>
-        /// 设置 Puzzle 在父节点局部坐标中的位置。
+        /// 将当前拼图的显示层级提升到当前根节点的最上层。
         /// </summary>
-        public static void SetWorldPosition(this PuzzleView self, Vector3 localPosition)
+        /// <param name="self">当前 PuzzleView。</param>
+        public static void BringToFront(this PuzzleView self)
         {
             if (self.Transform != null)
             {
-                self.Transform.localPosition = localPosition;
+                self.Transform.SetAsLastSibling();
+            }
+
+            if (self.SpriteRenderer != null)
+            {
+                self.SpriteRenderer.sortingOrder = PuzzleViewConst.DraggingSortingOrder;
             }
         }
 
         /// <summary>
-        /// 查找当前默认 1x1 Puzzle 对应的 Slot 锚点。
+        /// 将当前拼图恢复到默认显示层级。
         /// </summary>
-        public static Transform FindSlotAnchorTransform(this PuzzleView self)
+        /// <param name="self">当前 PuzzleView。</param>
+        public static void RestoreVisualPriority(this PuzzleView self)
         {
+            if (self.SpriteRenderer != null)
+            {
+                self.SpriteRenderer.sortingOrder = PuzzleViewConst.DefaultSortingOrder;
+            }
+        }
+
+        /// <summary>
+        /// 根据当前 Puzzle 的离散旋转状态刷新表现层朝向，并保持原点格位置不变。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        public static void RefreshRotation(this PuzzleView self)
+        {
+            Puzzle puzzle = self.GetParent<Puzzle>();
+            if (self.Transform == null || puzzle == null)
+            {
+                return;
+            }
+
+            Vector3 originWorldPosition = self.GetOriginWorldPosition();
+            self.Transform.localRotation = Quaternion.Euler(0f, 0f, -90f * (int)puzzle.Rotation);
+            self.SetOriginWorldPosition(originWorldPosition);
+        }
+
+        /// <summary>
+        /// 直接按世界坐标设置 Puzzle 根节点的场景位置。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="worldPosition">目标世界坐标。</param>
+        public static void SetWorldPosition(this PuzzleView self, Vector3 worldPosition)
+        {
+            if (self.Transform == null)
+            {
+                return;
+            }
+
+            Transform parentTransform = self.Transform.parent;
+            self.Transform.localPosition = parentTransform != null ? parentTransform.InverseTransformPoint(worldPosition) : worldPosition;
+        }
+
+        /// <summary>
+        /// 直接按原点格锚点的世界坐标设置 Puzzle 的场景位置。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="originWorldPosition">目标原点格世界坐标。</param>
+        public static void SetOriginWorldPosition(this PuzzleView self, Vector3 originWorldPosition)
+        {
+            if (self.Transform == null)
+            {
+                return;
+            }
+
+            Vector3 currentOriginWorldPosition = self.GetOriginWorldPosition();
+            Vector3 rootTargetWorldPosition = self.Transform.position + (originWorldPosition - currentOriginWorldPosition);
+            self.SetWorldPosition(rootTargetWorldPosition);
+        }
+
+        /// <summary>
+        /// 获取当前 Puzzle 指定形状格对应的场景锚点。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="slot">要匹配的 Puzzle Slot。</param>
+        /// <returns>当前形状格对应的场景锚点。</returns>
+        public static Transform GetSlotAnchorTransform(this PuzzleView self, Slot slot)
+        {
+            if (slot == null)
+            {
+                return self.SlotAnchorTransform != null ? self.SlotAnchorTransform : self.Transform;
+            }
+
+            return self.FindBestSlotAnchorTransform(slot.X, slot.Y);
+        }
+
+        /// <summary>
+        /// 获取当前 Puzzle 原点格锚点的世界坐标。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <returns>原点格锚点的世界坐标。</returns>
+        public static Vector3 GetOriginWorldPosition(this PuzzleView self)
+        {
+            Puzzle puzzle = self.GetParent<Puzzle>();
+            Slot originSlot = puzzle?.GetOriginSlot();
+            Transform slotAnchorTransform = self.GetSlotAnchorTransform(originSlot);
+            if (slotAnchorTransform != null)
+            {
+                return slotAnchorTransform.position;
+            }
+
+            return self.Transform != null ? self.Transform.position : Vector3.zero;
+        }
+
+        /// <summary>
+        /// 收集 Puzzle prefab 中全部可用于匹配形状格的锚点。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <returns>可用的 Slot 锚点列表。</returns>
+        public static List<Transform> FindSlotAnchorTransforms(this PuzzleView self)
+        {
+            List<Transform> results = new List<Transform>();
+            if (self.Transform == null)
+            {
+                return results;
+            }
+
             BoxCollider2D[] boxColliders = self.Transform.GetComponentsInChildren<BoxCollider2D>(true);
             foreach (BoxCollider2D boxCollider in boxColliders)
             {
-                if (boxCollider.transform != self.Transform)
+                if (boxCollider.transform == self.Transform)
                 {
-                    return boxCollider.transform;
+                    continue;
+                }
+
+                if (!results.Contains(boxCollider.transform))
+                {
+                    results.Add(boxCollider.transform);
                 }
             }
 
-            return self.Transform;
+            if (results.Count == 0)
+            {
+                results.Add(self.Transform);
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// 查找当前 Puzzle 原点格优先使用的锚点。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <returns>原点格优先使用的锚点。</returns>
+        public static Transform FindOriginSlotAnchorTransform(this PuzzleView self)
+        {
+            return self.FindBestSlotAnchorTransform(0, 0);
         }
 
         /// <summary>
@@ -96,45 +237,47 @@ namespace ET.Client
                 entityRef = targetGameObject.AddComponent<GameObjectEntityRef>();
             }
 
+            if (entityRef == null)
+            {
+                throw new UnityException($"failed to add GameObjectEntityRef on puzzle object: {targetGameObject.name}");
+            }
+
             entityRef.Entity = self;
         }
 
         /// <summary>
-        /// 为指定对象挂载通用碰撞标记。
+        /// 按 Puzzle Slot 的局部坐标匹配最接近的 prefab 锚点。
         /// </summary>
         /// <param name="self">当前 PuzzleView。</param>
-        /// <param name="targetGameObject">要挂载标记的对象。</param>
-        /// <param name="group">碰撞分组。</param>
-        /// <param name="primary">是否为主碰撞体。</param>
-        private static void BindCollisionMarker(this PuzzleView self, GameObject targetGameObject, string group, bool primary)
+        /// <param name="slotX">目标形状格的局部 X 坐标。</param>
+        /// <param name="slotY">目标形状格的局部 Y 坐标。</param>
+        /// <returns>最匹配的 prefab 锚点。</returns>
+        private static Transform FindBestSlotAnchorTransform(this PuzzleView self, int slotX, int slotY)
         {
-            if (targetGameObject == null)
+            if (self.SlotAnchorTransforms == null || self.SlotAnchorTransforms.Count == 0)
             {
-                return;
+                return self.Transform;
             }
 
-            CollisionMarker collisionMarker = targetGameObject.GetComponent<CollisionMarker>();
-            if (collisionMarker == null)
+            Vector3 expectedLocalPosition = new Vector3(slotX * PuzzleViewConst.GridCellSize, -slotY * PuzzleViewConst.GridCellSize, 0f);
+            Transform bestTransform = self.SlotAnchorTransforms[0];
+            float bestDistance = float.MaxValue;
+            foreach (Transform slotAnchorTransform in self.SlotAnchorTransforms)
             {
-                collisionMarker = targetGameObject.AddComponent<CollisionMarker>();
+                if (slotAnchorTransform == null)
+                {
+                    continue;
+                }
+
+                float distance = Vector3.Distance(slotAnchorTransform.localPosition, expectedLocalPosition);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestTransform = slotAnchorTransform;
+                }
             }
 
-            collisionMarker.Group = group;
-            collisionMarker.Primary = primary;
-        }
-
-        /// <summary>
-        /// 为 Puzzle 内部的 Slot 锚点补齐碰撞标记。
-        /// </summary>
-        /// <param name="self">当前 PuzzleView。</param>
-        private static void BindSlotAnchorMarker(this PuzzleView self)
-        {
-            if (self.SlotAnchorTransform == null)
-            {
-                return;
-            }
-
-            self.BindCollisionMarker(self.SlotAnchorTransform.gameObject, CollisionMarkerGroup.PuzzleSlot, true);
+            return bestTransform != null ? bestTransform : self.Transform;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace ET.Client
     public class AfterCreatePuzzle_CreatePuzzleView : AEvent<Scene, AfterCreatePuzzle>
     {
         /// <summary>
-        /// 根据 Puzzle 数据把拼图摆放到 Grid 左右两侧的初始位置。
+        /// 根据 Puzzle 配置和实例数据创建对应的 PuzzleView。
         /// </summary>
         protected override async ETTask Run(Scene scene, AfterCreatePuzzle args)
         {
@@ -32,8 +32,10 @@ namespace ET.Client
                 throw new UnityException("grid must exist before puzzle view is created");
             }
 
-            Vector3 worldPosition = PuzzleViewLayoutHelper.GetPuzzleWorldPosition(grid, puzzle);
-            puzzle.AddComponent<PuzzleView, string, Vector3>(PuzzleViewConst.DefaultPuzzlePrefabPath, worldPosition);
+            PuzzleConfig puzzleConfig = PuzzleConfigHelper.GetPuzzleConfig(puzzle.PuzzleConfigId);
+            string assetLocation = PuzzleAssetPathHelper.ToAssetLocation(puzzleConfig.PrefabPath);
+            Vector3 worldPosition = PuzzleViewLayoutHelper.GetPuzzleWorldPosition(puzzle);
+            puzzle.AddComponent<PuzzleView, string, Vector3>(assetLocation, worldPosition);
             if (puzzle.GetComponent<PuzzleDragComponent>() == null)
             {
                 puzzle.AddComponent<PuzzleDragComponent>();

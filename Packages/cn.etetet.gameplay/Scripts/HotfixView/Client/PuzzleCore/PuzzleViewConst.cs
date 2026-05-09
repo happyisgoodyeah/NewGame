@@ -6,43 +6,23 @@ namespace ET.Client
     public static class PuzzleViewConst
     {
         /// <summary>
-        /// GridView 使用的 prefab 资源路径。
-        /// </summary>
-        public const string GridPrefabPath = "Prefab/Grid1001";
-
-        /// <summary>
-        /// Grid SlotView 使用的 prefab 资源路径。
-        /// </summary>
-        public const string GridSlotPrefabPath = "Slot1001";
-
-        /// <summary>
-        /// Puzzle 预制体内部预期使用的 Slot prefab 路径。
-        /// </summary>
-        public const string PuzzleSlotPrefabPath = "Slot1000";
-
-        /// <summary>
-        /// 默认 PuzzleView 使用的 prefab 资源路径。
-        /// </summary>
-        public const string DefaultPuzzlePrefabPath = "Prefab/Puzzle1001";
-
-        /// <summary>
         /// Grid 每个 Slot 在场景中的间距。
         /// </summary>
         public const float GridCellSize = 3f;
 
         /// <summary>
-        /// Puzzle 初始摆放到 Grid 两侧时预留的水平间隔。
+        /// 左键按下后判定为正式拖拽的屏幕位移阈值。
         /// </summary>
-        public const float PuzzleHorizontalMargin = 6f;
+        public const float DragStartScreenThreshold = 12f;
 
         /// <summary>
-        /// 左侧 Puzzle 初始摆放的垂直偏移。
+        /// 拖拽中拼图主图临时抬高到的排序值。
         /// </summary>
-        public const float LeftPuzzleStartY = 3.5f;
+        public const int DraggingSortingOrder = 100;
 
         /// <summary>
-        /// 右侧 Puzzle 初始摆放的垂直偏移。
+        /// 非拖拽状态下拼图主图的默认排序值。
         /// </summary>
-        public const float RightPuzzleStartY = -3.5f;
+        public const int DefaultSortingOrder = 0;
     }
 }

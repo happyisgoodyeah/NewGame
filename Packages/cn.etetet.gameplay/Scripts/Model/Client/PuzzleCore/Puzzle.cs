@@ -12,6 +12,21 @@ namespace ET.Client
         public int PuzzleConfigId { get; set; }
 
         /// <summary>
+        /// 当前拼图初始生成时的世界坐标 X 分量。
+        /// </summary>
+        public float InitialWorldPositionX { get; set; }
+
+        /// <summary>
+        /// 当前拼图初始生成时的世界坐标 Y 分量。
+        /// </summary>
+        public float InitialWorldPositionY { get; set; }
+
+        /// <summary>
+        /// 当前拼图初始生成时的世界坐标 Z 分量。
+        /// </summary>
+        public float InitialWorldPositionZ { get; set; }
+
+        /// <summary>
         /// 当前拼图采用的离散旋转状态。
         /// </summary>
         public PuzzleRotation Rotation { get; set; }

@@ -1,0 +1,26 @@
+[
+  {
+    "Id": 1000,
+    "Name": "拼图用格",
+    "X": 1,
+    "Y": 1,
+    "PrefabPath": "Slot/Slot1000",
+    "AllowPlace": false
+  },
+  {
+    "Id": 1001,
+    "Name": "普通格",
+    "X": 1,
+    "Y": 1,
+    "PrefabPath": "Slot/Slot1001",
+    "AllowPlace": true
+  },
+  {
+    "Id": 1002,
+    "Name": "障碍格",
+    "X": 1,
+    "Y": 1,
+    "PrefabPath": "Slot/Slot1002",
+    "AllowPlace": false
+  }
+]

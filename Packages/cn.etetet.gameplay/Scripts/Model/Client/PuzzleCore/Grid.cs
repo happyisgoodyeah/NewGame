@@ -7,6 +7,11 @@ namespace ET.Client
     public class Grid : Entity, IAwake<int, int>
     {
         /// <summary>
+        /// 当前棋盘对应的配置表 id。
+        /// </summary>
+        public int GridConfigId { get; set; }
+
+        /// <summary>
         /// 棋盘列数。
         /// </summary>
         public int Width { get; set; }

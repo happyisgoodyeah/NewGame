@@ -8,6 +8,7 @@ namespace ET.Client
         [EntitySystem]
         private static void Awake(this Grid self, int width, int height)
         {
+            self.GridConfigId = 0;
             self.Width = width;
             self.Height = height;
             self.PlaceableCount = 0;
@@ -33,18 +34,19 @@ namespace ET.Client
         /// <summary>
         /// 向 Grid 中添加一个棋盘格 Slot，并在数据创建完成后通知表现层生成 SlotView。
         /// </summary>
-        public static Slot AddSlot(this Grid self, int x, int y, SlotType kind)
+        /// <param name="self">目标棋盘。</param>
+        /// <param name="x">棋盘格 X 坐标。</param>
+        /// <param name="y">棋盘格 Y 坐标。</param>
+        /// <param name="slotConfigId">对应的 Slot 配置 id。</param>
+        /// <returns>创建完成的 Grid Slot。</returns>
+        public static Slot AddSlot(this Grid self, int x, int y, int slotConfigId)
         {
             if (!self.Contains(x, y))
             {
                 throw new ArgumentOutOfRangeException($"grid slot out of range: ({x}, {y})");
             }
 
-            if (kind != SlotType.GridBlocked && kind != SlotType.GridPlaceable)
-            {
-                throw new ArgumentException($"grid slot kind is invalid: {kind}");
-            }
-
+            SlotType kind = PuzzleConfigHelper.ResolveGridSlotType(slotConfigId);
             long slotId = SlotSystem.ToSlotId(x, y);
             if (self.GetChild<Slot>(slotId) != null)
             {
@@ -52,6 +54,7 @@ namespace ET.Client
             }
 
             Slot slot = self.AddChildWithId<Slot, int, int, SlotType>(slotId, x, y, kind);
+            slot.SlotConfigId = slotConfigId;
             slot.AddComponent<GridSlotStateComponent>();
             EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
             self.RefreshStatistics();

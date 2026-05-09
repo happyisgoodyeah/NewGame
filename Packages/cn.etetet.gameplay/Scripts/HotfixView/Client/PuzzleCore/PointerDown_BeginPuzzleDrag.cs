@@ -1,13 +1,13 @@
 namespace ET.Client
 {
     /// <summary>
-    /// 在通用指针按下事件中尝试开始 Puzzle 拖拽。
+    /// 在通用指针按下事件中记录 Puzzle 的待确认按压状态。
     /// </summary>
     [Event(SceneType.Current)]
     public class PointerDown_BeginPuzzleDrag : AEvent<Scene, PointerDown>
     {
         /// <summary>
-        /// 从通用输入命中结果中解析 Puzzle，并在命中时开始拖拽。
+        /// 从通用输入命中结果中解析 Puzzle，并在命中时进入拖拽待确认状态。
         /// </summary>
         protected override async ETTask Run(Scene scene, PointerDown args)
         {
@@ -18,6 +18,7 @@ namespace ET.Client
                 return;
             }
 
+            inputStateComponent.ClearPendingPress();
             PuzzleInputResolveResult resolveResult = PuzzleInputResolver.Resolve(args.Context);
             Puzzle puzzle = resolveResult.Puzzle;
             if (puzzle == null)
@@ -26,15 +27,7 @@ namespace ET.Client
                 return;
             }
 
-            PuzzleDragComponent dragComponent = puzzle.GetComponent<PuzzleDragComponent>();
-            if (dragComponent == null)
-            {
-                await ETTask.CompletedTask;
-                return;
-            }
-
-            dragComponent.BeginDrag(args.Context);
-            inputStateComponent.SetDraggingPuzzle(puzzle);
+            inputStateComponent.SetPendingPress(puzzle, args.Context.ScreenPosition, args.Context.WorldPosition);
             await ETTask.CompletedTask;
         }
     }
