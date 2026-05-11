@@ -120,9 +120,13 @@ namespace ET.Client
                 {
                     puzzle.TryPlaceOnGrid(grid, previousAnchorX, previousAnchorY);
                 }
+
+                puzzleView.PlayBlockedRotation();
+                puzzleView.RestoreVisualPriority();
+                return;
             }
 
-            puzzleView.RefreshRotation();
+            puzzleView.RefreshRotation(true);
             puzzleView.RestoreVisualPriority();
         }
     }

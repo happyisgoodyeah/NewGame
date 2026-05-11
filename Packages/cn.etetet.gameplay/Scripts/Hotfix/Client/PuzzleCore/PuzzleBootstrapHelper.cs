@@ -6,7 +6,7 @@ namespace ET.Client
     public static class PuzzleBootstrapHelper
     {
         /// <summary>
-        /// 在当前场景中创建默认 Grid，并在数据创建完成后通知表现层生成 GridView 和 PuzzleView。
+        /// 在当前场景中创建默认 Grid、Grid Slot 和 Puzzle 数据。
         /// </summary>
         public static Grid CreateDefaultGrid(Scene scene)
         {
@@ -23,7 +23,6 @@ namespace ET.Client
 
             Grid grid = scene.AddChildWithId<Grid, int, int>(PuzzleCoreConst.DefaultGridId, width, height);
             grid.GridConfigId = gridConfig.Id;
-            EventSystem.Instance.Publish(scene, new AfterCreateGrid() { Grid = grid });
 
             CreateGridSlots(grid, gridConfig, width, height);
             CreatePuzzles(scene, gridConfig);
@@ -87,7 +86,6 @@ namespace ET.Client
             puzzleEntity.InitialWorldPositionX = puzzleInfo.Trans.X;
             puzzleEntity.InitialWorldPositionY = puzzleInfo.Trans.Y;
             puzzleEntity.InitialWorldPositionZ = puzzleInfo.Trans.Z;
-            EventSystem.Instance.Publish(scene, new AfterCreatePuzzle() { Puzzle = puzzleEntity });
 
             foreach (System.Collections.Generic.List<int> slotOffset in puzzleConfig.SlotOffset)
             {

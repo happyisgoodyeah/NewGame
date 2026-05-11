@@ -52,7 +52,17 @@ namespace ET.Client
         /// <summary>
         /// 当前用于驱动拼图平滑移动的 Tween。
         /// </summary>
-        public Tween MoveTween { get; set; }
+        public Tweener MoveTween { get; set; }
+
+        /// <summary>
+        /// 当前移动 Tween 的目标局部坐标，用于避免同一目标被重复重启。
+        /// </summary>
+        public Vector3 MoveTargetLocalPosition { get; set; }
+
+        /// <summary>
+        /// 当前是否已经记录了移动 Tween 的目标局部坐标。
+        /// </summary>
+        public bool HasMoveTargetLocalPosition { get; set; }
 
         /// <summary>
         /// 当前 GridSnap 模式下原点格的 X 坐标。

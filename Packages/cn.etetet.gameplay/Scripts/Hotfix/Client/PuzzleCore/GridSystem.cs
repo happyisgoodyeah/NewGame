@@ -32,7 +32,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Grid 中添加一个棋盘格 Slot，并在数据创建完成后通知表现层生成 SlotView。
+        /// 向 Grid 中添加一个棋盘格 Slot。
         /// </summary>
         /// <param name="self">目标棋盘。</param>
         /// <param name="x">棋盘格 X 坐标。</param>
@@ -56,7 +56,6 @@ namespace ET.Client
             Slot slot = self.AddChildWithId<Slot, int, int, SlotType>(slotId, x, y, kind);
             slot.SlotConfigId = slotConfigId;
             slot.AddComponent<GridSlotStateComponent>();
-            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
             self.RefreshStatistics();
             return slot;
         }

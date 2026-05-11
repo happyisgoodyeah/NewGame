@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,6 +10,11 @@ namespace ET.Client
     [EntitySystemOf(typeof(PuzzleView))]
     public static partial class PuzzleViewSystem
     {
+        private const float RotationTweenDuration = 0.16f;
+        private const float RotationTweenOvershoot = 0.55f;
+        private const float BlockedRotationAngle = 30f;
+        private const float BlockedRotationTweenDuration = 0.1f;
+
         /// <summary>
         /// 创建 Puzzle 场景对象，并绑定主图和碰撞组件。
         /// </summary>
@@ -35,6 +41,7 @@ namespace ET.Client
             self.SlotAnchorTransforms = self.FindSlotAnchorTransforms();
             self.SlotAnchorTransform = self.FindOriginSlotAnchorTransform();
             self.MoveMode = PuzzleMoveMode.FreeFollow;
+            self.RotationTween = null;
             self.BindEntityReference(instance);
             self.RefreshRotation();
             self.RestoreVisualPriority();
@@ -46,6 +53,7 @@ namespace ET.Client
         [EntitySystem]
         private static void Destroy(this PuzzleView self)
         {
+            self.KillRotationTween();
             if (self.GameObject == null)
             {
                 return;
@@ -94,7 +102,8 @@ namespace ET.Client
         /// 根据当前 Puzzle 的离散旋转状态刷新表现层朝向，并保持原点格位置不变。
         /// </summary>
         /// <param name="self">当前 PuzzleView。</param>
-        public static void RefreshRotation(this PuzzleView self)
+        /// <param name="animated">是否使用 DOTween 播放旋转过渡。</param>
+        public static void RefreshRotation(this PuzzleView self, bool animated = false)
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
             if (self.Transform == null || puzzle == null)
@@ -103,8 +112,32 @@ namespace ET.Client
             }
 
             Vector3 originWorldPosition = self.GetOriginWorldPosition();
-            self.Transform.localRotation = Quaternion.Euler(0f, 0f, -90f * (int)puzzle.Rotation);
-            self.SetOriginWorldPosition(originWorldPosition);
+            float targetRotationZ = -90f * (int)puzzle.Rotation;
+            if (!animated)
+            {
+                self.KillRotationTween();
+                self.ApplyRotationKeepingOrigin(targetRotationZ, originWorldPosition);
+                return;
+            }
+
+            self.PlayRotationTween(targetRotationZ, originWorldPosition);
+        }
+
+        /// <summary>
+        /// 播放一次旋转失败的受阻表现，朝本次尝试方向旋转一小段后复原。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        public static void PlayBlockedRotation(this PuzzleView self)
+        {
+            Puzzle puzzle = self.GetParent<Puzzle>();
+            if (self.Transform == null || puzzle == null)
+            {
+                return;
+            }
+
+            Vector3 originWorldPosition = self.GetOriginWorldPosition();
+            float baseRotationZ = -90f * (int)puzzle.Rotation;
+            self.PlayBlockedRotationTween(baseRotationZ, originWorldPosition);
         }
 
         /// <summary>
@@ -243,6 +276,98 @@ namespace ET.Client
             }
 
             entityRef.Entity = self;
+        }
+
+        /// <summary>
+        /// 用 DOTween 播放一次离散旋转，并在动画过程中保持原点格锚点不漂移。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="targetRotationZ">目标 Z 轴局部角度。</param>
+        /// <param name="originWorldPosition">需要保持不变的原点格世界坐标。</param>
+        private static void PlayRotationTween(this PuzzleView self, float targetRotationZ, Vector3 originWorldPosition)
+        {
+            self.KillRotationTween();
+            float currentRotationZ = self.Transform.localEulerAngles.z;
+            float endRotationZ = currentRotationZ + Mathf.DeltaAngle(currentRotationZ, targetRotationZ);
+            self.RotationTween = DOTween.To(
+                        () => currentRotationZ,
+                        value =>
+                        {
+                            currentRotationZ = value;
+                            self.ApplyRotationKeepingOrigin(value, originWorldPosition);
+                        },
+                        endRotationZ,
+                        RotationTweenDuration)
+                    .SetEase(Ease.OutBack, RotationTweenOvershoot)
+                    .SetLink(self.GameObject)
+                    .OnComplete(() =>
+                    {
+                        self.ApplyRotationKeepingOrigin(targetRotationZ, originWorldPosition);
+                        self.RotationTween = null;
+                    });
+        }
+
+        /// <summary>
+        /// 用 DOTween 播放一次失败旋转的往返动画，并在过程中保持原点格锚点不漂移。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="baseRotationZ">失败动画最终需要回到的基础角度。</param>
+        /// <param name="originWorldPosition">需要保持不变的原点格世界坐标。</param>
+        private static void PlayBlockedRotationTween(this PuzzleView self, float baseRotationZ, Vector3 originWorldPosition)
+        {
+            self.KillRotationTween();
+            float currentRotationZ = self.Transform.localEulerAngles.z;
+            float startRotationZ = currentRotationZ + Mathf.DeltaAngle(currentRotationZ, baseRotationZ);
+            float blockedRotationZ = startRotationZ - BlockedRotationAngle;
+            self.ApplyRotationKeepingOrigin(startRotationZ, originWorldPosition);
+            self.RotationTween = DOTween.To(
+                        () => startRotationZ,
+                        value =>
+                        {
+                            startRotationZ = value;
+                            self.ApplyRotationKeepingOrigin(value, originWorldPosition);
+                        },
+                        blockedRotationZ,
+                        BlockedRotationTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLoops(2, LoopType.Yoyo)
+                    .SetLink(self.GameObject)
+                    .OnComplete(() =>
+                    {
+                        self.ApplyRotationKeepingOrigin(baseRotationZ, originWorldPosition);
+                        self.RotationTween = null;
+                    });
+        }
+
+        /// <summary>
+        /// 设置局部旋转角度，并把 Puzzle 原点格重新锚回指定世界坐标。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        /// <param name="rotationZ">目标 Z 轴局部角度。</param>
+        /// <param name="originWorldPosition">需要保持不变的原点格世界坐标。</param>
+        private static void ApplyRotationKeepingOrigin(this PuzzleView self, float rotationZ, Vector3 originWorldPosition)
+        {
+            self.Transform.localRotation = Quaternion.Euler(0f, 0f, rotationZ);
+            self.SetOriginWorldPosition(originWorldPosition);
+        }
+
+        /// <summary>
+        /// 停止当前仍在播放的旋转 Tween。
+        /// </summary>
+        /// <param name="self">当前 PuzzleView。</param>
+        private static void KillRotationTween(this PuzzleView self)
+        {
+            if (self.RotationTween == null)
+            {
+                return;
+            }
+
+            if (self.RotationTween.IsActive())
+            {
+                self.RotationTween.Kill(false);
+            }
+
+            self.RotationTween = null;
         }
 
         /// <summary>

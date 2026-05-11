@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -53,5 +54,10 @@ namespace ET.Client
         /// 当前 Puzzle 表现层采用的移动模式。
         /// </summary>
         public PuzzleMoveMode MoveMode { get; set; }
+
+        /// <summary>
+        /// 当前用于驱动拼图旋转表现的 Tween。
+        /// </summary>
+        public Tweener RotationTween { get; set; }
     }
 }

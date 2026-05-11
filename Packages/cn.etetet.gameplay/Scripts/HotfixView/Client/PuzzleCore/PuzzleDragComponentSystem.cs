@@ -10,8 +10,12 @@ namespace ET.Client
     [EntitySystemOf(typeof(PuzzleDragComponent))]
     public static partial class PuzzleDragComponentSystem
     {
-        private const float FollowTweenDuration = 0.1f;
+        private const float FreeFollowTweenDuration = 0.08f;
+        private const float SnapTweenDuration = 0.145f;
+        private const float SnapEaseOvershoot = 0.72f;
+        private const float SettleTweenDuration = 0.12f;
         private const float SnapStepThreshold = 0.5f;
+        private const float MoveTargetEpsilonSqr = 0.000001f;
 
         /// <summary>
         /// 初始化拖拽状态。
@@ -28,6 +32,8 @@ namespace ET.Client
             self.DragStartAnchorY = 0;
             self.LastPointerWorldPosition = Vector3.zero;
             self.MoveTween = null;
+            self.MoveTargetLocalPosition = Vector3.zero;
+            self.HasMoveTargetLocalPosition = false;
             self.SnapAnchorX = 0;
             self.SnapAnchorY = 0;
             self.SnapRegion = (byte)GridContactRegion.Center;
@@ -50,6 +56,8 @@ namespace ET.Client
             self.DragStartAnchorY = 0;
             self.LastPointerWorldPosition = Vector3.zero;
             self.MoveTween = null;
+            self.MoveTargetLocalPosition = Vector3.zero;
+            self.HasMoveTargetLocalPosition = false;
             self.SnapAnchorX = 0;
             self.SnapAnchorY = 0;
             self.SnapRegion = (byte)GridContactRegion.Center;
@@ -93,7 +101,7 @@ namespace ET.Client
                 return;
             }
 
-            self.PlayMoveTween(puzzleView, pointerContext.WorldPosition);
+            self.PlayMoveTween(puzzleView, pointerContext.WorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
             if (grid != null)
             {
                 puzzle.ClearPlacement(grid);
@@ -199,7 +207,7 @@ namespace ET.Client
 
             puzzle.State = PuzzleState.Placed;
             puzzleView.RestoreVisualPriority();
-            self.PlayMoveTweenToOrigin(puzzleView, gridView.GetGridCoordinateWorldPosition(anchorX, anchorY));
+            self.PlayMoveTweenToOrigin(puzzleView, gridView.GetGridCoordinateWorldPosition(anchorX, anchorY), SettleTweenDuration, Ease.OutCubic);
             self.ClearDragState();
         }
 
@@ -219,7 +227,7 @@ namespace ET.Client
             if (puzzleView != null && puzzleView.Transform != null)
             {
                 puzzleView.RestoreVisualPriority();
-                self.PlayMoveTween(puzzleView, self.DragStartWorldPosition);
+                self.PlayMoveTween(puzzleView, self.DragStartWorldPosition, SettleTweenDuration, Ease.OutCubic);
             }
 
             self.ClearDragState();
@@ -245,7 +253,7 @@ namespace ET.Client
                 puzzleView.RefreshRotation();
                 if (self.HasInitialWorldPosition)
                 {
-                    self.PlayMoveTween(puzzleView, self.InitialWorldPosition);
+                    self.PlayMoveTween(puzzleView, self.InitialWorldPosition, SettleTweenDuration, Ease.OutCubic);
                 }
             }
 
@@ -278,7 +286,7 @@ namespace ET.Client
                 return;
             }
 
-            self.PlayMoveTween(puzzleView, pointerWorldPosition);
+            self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
 
@@ -319,7 +327,7 @@ namespace ET.Client
                 puzzle.State = PuzzleState.Dragging;
                 puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
                 self.IsGridSnapActive = false;
-                self.PlayMoveTween(puzzleView, pointerWorldPosition);
+                self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
                 return;
             }
 
@@ -365,7 +373,7 @@ namespace ET.Client
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
             self.IsGridSnapActive = false;
-            self.PlayMoveTween(puzzleView, pointerWorldPosition);
+            self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
         }
 
         /// <summary>
@@ -387,20 +395,41 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 将目标世界坐标转换为 PuzzleView 父节点局部坐标后应用到表现层。
+        /// 将目标世界坐标转换为 PuzzleView 父节点局部坐标后用 DOTween 缓动到目标。
         /// </summary>
         /// <param name="self">当前拼图的拖拽组件。</param>
         /// <param name="puzzleView">要被移动的拼图表现层。</param>
         /// <param name="targetWorldPosition">目标世界坐标。</param>
-        private static void PlayMoveTween(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetWorldPosition)
+        /// <param name="duration">缓动持续时间。</param>
+        /// <param name="ease">缓动曲线。</param>
+        /// <param name="overshoot">Back/Elastic 类曲线使用的回弹强度，0 表示使用 DOTween 默认曲线参数。</param>
+        private static void PlayMoveTween(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetWorldPosition, float duration, Ease ease, float overshoot = 0f)
         {
             Transform parentTransform = puzzleView.Transform.parent;
             Vector3 targetLocalPosition = parentTransform != null ? parentTransform.InverseTransformPoint(targetWorldPosition) : targetWorldPosition;
+            bool isSameTarget = self.HasMoveTargetLocalPosition && (self.MoveTargetLocalPosition - targetLocalPosition).sqrMagnitude <= MoveTargetEpsilonSqr;
+            if (self.MoveTween != null && self.MoveTween.IsActive())
+            {
+                if (isSameTarget)
+                {
+                    return;
+                }
+
+                self.MoveTargetLocalPosition = targetLocalPosition;
+                self.HasMoveTargetLocalPosition = true;
+                self.MoveTween.ChangeEndValue(targetLocalPosition, duration, true);
+                self.ApplyMoveEase(ease, overshoot);
+                self.MoveTween.Restart();
+                return;
+            }
+
             self.KillMoveTween();
+            self.MoveTargetLocalPosition = targetLocalPosition;
+            self.HasMoveTargetLocalPosition = true;
             self.MoveTween = puzzleView.Transform
-                    .DOLocalMove(targetLocalPosition, FollowTweenDuration)
-                    .SetEase(Ease.OutQuad)
+                    .DOLocalMove(targetLocalPosition, duration)
                     .SetLink(puzzleView.GameObject);
+            self.ApplyMoveEase(ease, overshoot);
         }
 
         /// <summary>
@@ -409,11 +438,36 @@ namespace ET.Client
         /// <param name="self">当前拼图的拖拽组件。</param>
         /// <param name="puzzleView">要被移动的拼图表现层。</param>
         /// <param name="targetOriginWorldPosition">目标原点格世界坐标。</param>
-        private static void PlayMoveTweenToOrigin(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetOriginWorldPosition)
+        /// <param name="duration">缓动持续时间。</param>
+        /// <param name="ease">缓动曲线。</param>
+        /// <param name="overshoot">Back/Elastic 类曲线使用的回弹强度，0 表示使用 DOTween 默认曲线参数。</param>
+        private static void PlayMoveTweenToOrigin(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetOriginWorldPosition, float duration, Ease ease, float overshoot = 0f)
         {
             Vector3 currentOriginWorldPosition = puzzleView.GetOriginWorldPosition();
             Vector3 rootTargetWorldPosition = puzzleView.Transform.position + (targetOriginWorldPosition - currentOriginWorldPosition);
-            self.PlayMoveTween(puzzleView, rootTargetWorldPosition);
+            self.PlayMoveTween(puzzleView, rootTargetWorldPosition, duration, ease, overshoot);
+        }
+
+        /// <summary>
+        /// 为当前移动 Tween 应用指定缓动曲线，并在需要时设置回弹强度。
+        /// </summary>
+        /// <param name="self">当前拼图的拖拽组件。</param>
+        /// <param name="ease">缓动曲线。</param>
+        /// <param name="overshoot">Back/Elastic 类曲线使用的回弹强度，0 表示使用 DOTween 默认曲线参数。</param>
+        private static void ApplyMoveEase(this PuzzleDragComponent self, Ease ease, float overshoot)
+        {
+            if (self.MoveTween == null)
+            {
+                return;
+            }
+
+            if (overshoot > 0f)
+            {
+                self.MoveTween.SetEase(ease, overshoot);
+                return;
+            }
+
+            self.MoveTween.SetEase(ease);
         }
 
         /// <summary>
@@ -427,8 +481,7 @@ namespace ET.Client
         private static void ApplyPreviewAnchorPosition(this PuzzleDragComponent self, PuzzleView puzzleView, GridView gridView, int anchorX, int anchorY)
         {
             Vector3 previewWorldPosition = gridView.GetGridCoordinateWorldPosition(anchorX, anchorY);
-            self.KillMoveTween();
-            puzzleView.SetOriginWorldPosition(previewWorldPosition);
+            self.PlayMoveTweenToOrigin(puzzleView, previewWorldPosition, SnapTweenDuration, Ease.OutBack, SnapEaseOvershoot);
         }
 
         /// <summary>
@@ -567,6 +620,8 @@ namespace ET.Client
             }
 
             self.MoveTween = null;
+            self.MoveTargetLocalPosition = Vector3.zero;
+            self.HasMoveTargetLocalPosition = false;
         }
 
         /// <summary>

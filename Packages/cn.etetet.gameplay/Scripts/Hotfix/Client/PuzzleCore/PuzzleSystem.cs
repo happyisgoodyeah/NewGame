@@ -28,7 +28,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Puzzle 中添加一个形状格 Slot，并在数据创建完成后通知表现层绑定 SlotView。
+        /// 向 Puzzle 中添加一个形状格 Slot。
         /// </summary>
         public static Slot AddSlot(this Puzzle self, int x, int y)
         {
@@ -44,7 +44,6 @@ namespace ET.Client
                 self.OriginSlotId = slot.Id;
             }
 
-            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
             return slot;
         }
 
