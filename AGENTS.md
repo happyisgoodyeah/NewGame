@@ -76,15 +76,23 @@
   - 表现层组件优先命名为 `GridView`、`PuzzleView`、`SlotView`
   - 不额外追加 `Component` 后缀；其本质仍然是 ET `Component`
 - 数据层驱动表现层:
-  - `Grid`、`Puzzle`、`Slot` 等数据实体创建后，优先通过事件通知表现层生成对应 `View`
-  - 避免由场景总控或某个父级 `View` 直接代替子数据批量创建全部表现
-  - 推荐模式是 `AfterCreateXxx -> CreateXxxView`
+  - 当前项目的 `Grid`、`Puzzle`、`Slot` 创建完成后，通过对应实体生命周期事件驱动表现层创建
+  - 推荐边界是 `AfterCreateGrid -> GridView`、`AfterCreatePuzzle -> PuzzleView`、`AfterCreateSlot -> SlotView`
+  - 不要把同一个事件拆成多个只服务顺序初始化的小注册；但不同实体生命周期事件本身是合理边界
+  - 表现层事件 handler 需要显式处理 Unity 场景未加载完成的情况，例如等待场景 ready 后再创建 View
 
 ### 代码组织
 
 - 实体类优先只放数据
 - 逻辑优先放静态 `System` / `Handler` / `Helper`
 - 如果一个组件设计为通用复用能力，命名也应保持通用，避免带入当前项目或当前玩法的专属语义
+- Helper 不要为了“单一职责”拆成过多小类；同一业务域内的配置访问、路径转换、运行时映射等小工具优先收敛到语义较宽的 helper
+- Helper 命名不要过窄，避免 `XxxConfigHelper` 内又承载路径转换、运行时映射等非纯配置职责；需要时改成 `XxxCoreHelper` 这类更宽命名
+- 资源路径、加载定位、跨玩法通用规则不要塞进玩法 View helper；优先放到 `gamebase` 的通用 helper，例如 `ResourceLocationHelper`
+- 扩展方法优先放在被扩展对象所属语义附近:
+  - `Puzzle` 自身形状、旋转、原点格等扩展放回 `PuzzleSystem`
+  - `Scene` 的 PuzzleCore 场景根节点/ready 判断放在 `PuzzleSceneRootSystem`
+  - 依赖 `TimerComponentSystem.WaitFrameAsync()` 的 `WaitUntil` 放在 `Scripts/Hotfix` 层，不要放进 `Scripts/Core`
 - 新功能优先组织为:
   - `Entity/Component`
   - `static partial *System`
@@ -108,6 +116,13 @@
 - `ModelView`: 客户端桥接、轻量 Unity 相关、部分生成代码
 - `Hotfix`: 业务逻辑、消息、服务端逻辑
 - `HotfixView`: UI、表现、资源加载、Unity 强相关逻辑
+- 调用方向:
+  - `Core` 是底层基础设施，不能反向依赖 `Model` / `Hotfix` / `View`
+  - `Model` 只放数据定义，可依赖 `Core`，不依赖业务逻辑和表现层
+  - `ModelView` 放客户端表现数据和轻量 Unity 桥接，可依赖 `Core` / `Model`
+  - `Hotfix` 放业务逻辑，可依赖 `Core` / `Model`，不要调用 `HotfixView`
+  - `HotfixView` 是表现逻辑上层，可依赖 `Core` / `Model` / `ModelView` / `Hotfix`
+  - 物理包目录不等于程序集层级，例如 `Packages/cn.etetet.core/Scripts/Hotfix` 仍属于 `ET.Hotfix`
 
 ## 事件与异步
 
@@ -118,6 +133,10 @@
   - 订阅方各自处理
 - `Publish/PublishAsync` 是广播
 - `Invoke` 是强约束调用
+- 事件注册不要为了“解耦”而过度拆分:
+  - 同一个生命周期事件、同一业务阶段、同一场景初始化流程中的顺序逻辑，优先收敛到一个清晰的 handler 内按顺序组织
+  - 只有当订阅方属于不同模块边界、可独立开关、可复用扩展点，或确实需要广播语义时，才拆成多个事件注册
+  - 遇到 `AfterCreateXxx`、`EntryEventXxx`、场景初始化等入口事件时，先判断是否只是初始化步骤拆散；非必要不要新增多个注册类
 - `await` 不等于多线程
 - 优先使用:
   - `ETTask`

@@ -6,7 +6,7 @@ namespace ET.Client
     /// Slot 的场景表现组件，负责绑定或生成当前 Slot 对应的场景节点。
     /// </summary>
     [ComponentOf(typeof(Slot))]
-    public class SlotView : Entity, IAwake, IDestroy
+    public class SlotView : Entity, IAwake<GameObject>, IDestroy
     {
         /// <summary>
         /// 当前 Slot 绑定的场景对象。

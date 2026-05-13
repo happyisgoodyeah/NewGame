@@ -60,6 +60,16 @@ namespace ET.Client
         }
 
         /// <summary>
+        /// 判断当前 ET 场景是否已经具备创建 PuzzleCore View 的场景与资源加载条件。
+        /// </summary>
+        /// <param name="etScene">当前 ET 逻辑场景。</param>
+        /// <returns>是否可以安全创建 GridView、PuzzleView 和 SlotView。</returns>
+        public static bool IsPuzzleViewReady(this Scene etScene)
+        {
+            return etScene != null && !etScene.IsDisposed && etScene.TryGetUnityScene(out _) && etScene.GetComponent<ResourcesLoaderComponent>() != null;
+        }
+
+        /// <summary>
         /// 确保当前 ET Scene 已经缓存了当前 Unity 场景中的 SceneRoot 和 GridRoot。
         /// </summary>
         public static PuzzleSceneRoot EnsureInitialized(this Scene etScene)

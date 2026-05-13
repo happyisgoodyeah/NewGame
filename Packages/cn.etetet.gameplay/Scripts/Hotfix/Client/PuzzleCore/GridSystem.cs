@@ -32,7 +32,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Grid 中添加一个棋盘格 Slot。
+        /// 向 Grid 中添加一个棋盘格 Slot，并发布 Slot 数据创建完成事件。
         /// </summary>
         /// <param name="self">目标棋盘。</param>
         /// <param name="x">棋盘格 X 坐标。</param>
@@ -46,7 +46,7 @@ namespace ET.Client
                 throw new ArgumentOutOfRangeException($"grid slot out of range: ({x}, {y})");
             }
 
-            SlotType kind = PuzzleConfigHelper.ResolveGridSlotType(slotConfigId);
+            SlotType kind = PuzzleCoreHelper.ResolveGridSlotType(slotConfigId);
             long slotId = SlotSystem.ToSlotId(x, y);
             if (self.GetChild<Slot>(slotId) != null)
             {
@@ -57,6 +57,7 @@ namespace ET.Client
             slot.SlotConfigId = slotConfigId;
             slot.AddComponent<GridSlotStateComponent>();
             self.RefreshStatistics();
+            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
             return slot;
         }
 

@@ -12,12 +12,12 @@ namespace ET.Client
         /// 根据 Slot 的父对象类型，创建或绑定对应的场景节点。
         /// </summary>
         [EntitySystem]
-        private static void Awake(this SlotView self)
+        private static void Awake(this SlotView self, GameObject prefab)
         {
             Slot slot = self.GetParent<Slot>();
             if (slot.IsGridSlot())
             {
-                self.BindGridSlotView(slot);
+                self.BindGridSlotView(slot, prefab);
                 return;
             }
 
@@ -38,20 +38,13 @@ namespace ET.Client
                 return;
             }
 
-            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
-            if (loadComponent != null)
-            {
-                loadComponent.ReleaseInstantiate(self.GameObject);
-                return;
-            }
-
             UnityEngine.Object.Destroy(self.GameObject);
         }
 
         /// <summary>
         /// 为 Grid Slot 实例化配置指定的 Slot prefab。
         /// </summary>
-        private static void BindGridSlotView(this SlotView self, Slot slot)
+        private static void BindGridSlotView(this SlotView self, Slot slot, GameObject prefab)
         {
             Grid grid = slot.GetParent<Grid>();
             GridView gridView = grid.GetComponent<GridView>();
@@ -60,15 +53,12 @@ namespace ET.Client
                 throw new UnityException("grid view is required before creating grid slot view");
             }
 
-            SlotConfig slotConfig = PuzzleConfigHelper.GetSlotConfig(slot.SlotConfigId);
-            string assetLocation = PuzzleAssetPathHelper.ToAssetLocation(slotConfig.PrefabPath);
-            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, assetLocation);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab, gridView.SlotRoot, false);
             if (instance == null)
             {
-                throw new UnityException($"grid slot prefab not found: {assetLocation}");
+                throw new UnityException("grid slot prefab instantiate failed");
             }
 
-            instance.transform.SetParent(gridView.SlotRoot, false);
             instance.name = $"GridSlot_{slot.X}_{slot.Y}";
             instance.transform.localPosition = gridView.GetLocalPosition(slot);
 

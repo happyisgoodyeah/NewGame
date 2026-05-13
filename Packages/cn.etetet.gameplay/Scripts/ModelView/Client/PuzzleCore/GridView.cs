@@ -6,7 +6,7 @@ namespace ET.Client
     /// Grid 的场景表现组件，负责提供棋盘根节点、拼图容器和 Grid Slot 的挂载容器。
     /// </summary>
     [ComponentOf(typeof(Grid))]
-    public class GridView : Entity, IAwake<Vector3, float>, IDestroy
+    public class GridView : Entity, IAwake<GameObject, Vector3, float>, IDestroy
     {
         /// <summary>
         /// Grid 在场景中的根节点对象。

@@ -19,13 +19,13 @@ namespace ET.Client
         /// 创建 Puzzle 场景对象，并绑定主图和碰撞组件。
         /// </summary>
         [EntitySystem]
-        private static void Awake(this PuzzleView self, string prefabPath, Vector3 localPosition)
+        private static void Awake(this PuzzleView self, GameObject prefab, Vector3 localPosition)
         {
             PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
-            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, prefabPath);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
             if (instance == null)
             {
-                throw new UnityException($"puzzle prefab not found: {prefabPath}");
+                throw new UnityException("puzzle prefab instantiate failed");
             }
 
             instance.transform.SetParent(puzzleSceneRoot.SceneRoot, false);
@@ -56,13 +56,6 @@ namespace ET.Client
             self.KillRotationTween();
             if (self.GameObject == null)
             {
-                return;
-            }
-
-            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
-            if (loadComponent != null)
-            {
-                loadComponent.ReleaseInstantiate(self.GameObject);
                 return;
             }
 

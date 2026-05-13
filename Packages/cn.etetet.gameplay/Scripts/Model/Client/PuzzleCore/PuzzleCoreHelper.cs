@@ -3,7 +3,7 @@ namespace ET.Client
     /// <summary>
     /// PuzzleCore 配置访问和运行时映射辅助方法。
     /// </summary>
-    public static class PuzzleConfigHelper
+    public static class PuzzleCoreHelper
     {
         /// <summary>
         /// 获取默认调试关卡使用的 Grid 配置。
@@ -72,5 +72,6 @@ namespace ET.Client
             SlotConfig slotConfig = GetSlotConfig(slotConfigId);
             return slotConfig.AllowPlace ? SlotType.GridPlaceable : SlotType.GridBlocked;
         }
+
     }
 }

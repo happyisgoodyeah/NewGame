@@ -1,26 +1,26 @@
 namespace ET.Client
 {
     /// <summary>
-    /// PuzzleCore 的配置路径转 YooAssets 定位地址辅助方法。
+    /// 项目资源定位地址转换辅助方法。
     /// </summary>
-    public static class PuzzleAssetPathHelper
+    public static class ResourceLocationHelper
     {
         private const string GameplayResourceRoot = "Packages/cn.etetet.gameplay/Resources/";
         private const string PrefabExtension = ".prefab";
 
         /// <summary>
-        /// 将配置中的短 prefab 路径转换为 YooAssets 可直接加载的定位地址。
+        /// 将资源配置中的相对路径转换为 YooAssets 可加载的定位地址。
         /// </summary>
-        /// <param name="prefabPath">配置中的 prefab 路径。</param>
+        /// <param name="resourcePath">资源配置中的路径。</param>
         /// <returns>YooAssets 可加载的完整定位地址。</returns>
-        public static string ToAssetLocation(string prefabPath)
+        public static string ToAssetLocation(string resourcePath)
         {
-            if (string.IsNullOrWhiteSpace(prefabPath))
+            if (string.IsNullOrWhiteSpace(resourcePath))
             {
-                throw new System.ArgumentException("prefab path is empty", nameof(prefabPath));
+                throw new System.ArgumentException("resource path is empty", nameof(resourcePath));
             }
 
-            string normalizedPath = prefabPath.Replace('\\', '/').TrimStart('/');
+            string normalizedPath = resourcePath.Replace('\\', '/').TrimStart('/');
             if (normalizedPath.StartsWith(GameplayResourceRoot))
             {
                 return normalizedPath.EndsWith(PrefabExtension) ? normalizedPath : $"{normalizedPath}{PrefabExtension}";

@@ -12,15 +12,13 @@ namespace ET.Client
         /// 创建 Grid 的场景根节点和 Grid Slot 的挂载容器。
         /// </summary>
         [EntitySystem]
-        private static void Awake(this GridView self, Vector3 localPosition, float cellSize)
+        private static void Awake(this GridView self, GameObject prefab, Vector3 localPosition, float cellSize)
         {
             PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
-            GridConfig gridConfig = PuzzleConfigHelper.GetGridConfig(self.GetParent<Grid>().GridConfigId);
-            string assetLocation = PuzzleAssetPathHelper.ToAssetLocation(gridConfig.PrefabPath);
-            GameObject instance = self.Scene().YIUILoad()?.LoadAssetInstantiate(string.Empty, assetLocation);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
             if (instance == null)
             {
-                throw new UnityException($"grid prefab not found: {assetLocation}");
+                throw new UnityException("grid prefab instantiate failed");
             }
 
             instance.transform.SetParent(puzzleSceneRoot.GridRoot, false);
@@ -57,13 +55,6 @@ namespace ET.Client
         {
             if (self.GameObject == null)
             {
-                return;
-            }
-
-            YIUILoadComponent loadComponent = self.Scene().YIUILoad();
-            if (loadComponent != null)
-            {
-                loadComponent.ReleaseInstantiate(self.GameObject);
                 return;
             }
 

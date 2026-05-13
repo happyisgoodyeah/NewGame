@@ -16,13 +16,14 @@ namespace ET.Client
                 return existedGrid;
             }
 
-            GridConfig gridConfig = PuzzleConfigHelper.GetDefaultGridConfig();
+            GridConfig gridConfig = PuzzleCoreHelper.GetDefaultGridConfig();
             int width = gridConfig.X;
             int height = gridConfig.Y;
             ValidateGridConfig(gridConfig, width, height);
 
             Grid grid = scene.AddChildWithId<Grid, int, int>(PuzzleCoreConst.DefaultGridId, width, height);
             grid.GridConfigId = gridConfig.Id;
+            EventSystem.Instance.Publish(scene, new AfterCreateGrid() { Grid = grid });
 
             CreateGridSlots(grid, gridConfig, width, height);
             CreatePuzzles(scene, gridConfig);
@@ -81,7 +82,7 @@ namespace ET.Client
                 return existedPuzzle;
             }
 
-            PuzzleConfig puzzleConfig = PuzzleConfigHelper.GetPuzzleConfig(puzzleInfo.Id);
+            PuzzleConfig puzzleConfig = PuzzleCoreHelper.GetPuzzleConfig(puzzleInfo.Id);
             Puzzle puzzleEntity = scene.AddChildWithId<Puzzle, int>(puzzleId, puzzleConfig.Id);
             puzzleEntity.InitialWorldPositionX = puzzleInfo.Trans.X;
             puzzleEntity.InitialWorldPositionY = puzzleInfo.Trans.Y;
@@ -93,6 +94,7 @@ namespace ET.Client
                 puzzleEntity.AddSlot(slotOffset[0], slotOffset[1]);
             }
 
+            EventSystem.Instance.Publish(scene, new AfterCreatePuzzle() { Puzzle = puzzleEntity });
             return puzzleEntity;
         }
 
