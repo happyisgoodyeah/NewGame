@@ -58,8 +58,33 @@ namespace ET.Client
         /// <returns>当前命中的 PuzzleCore 解析结果。</returns>
         public static PuzzleInputResolveResult Resolve(PointerInputContext pointerContext)
         {
+            return Resolve(pointerContext.HitResults);
+        }
+
+        /// <summary>
+        /// 从通用输入上下文的按压起始命中结果中筛选首个命中的 PuzzleView 与 SlotView。
+        /// </summary>
+        /// <param name="pointerContext">输入层发布的通用输入上下文。</param>
+        /// <returns>按压起始时命中的 PuzzleCore 解析结果。</returns>
+        public static PuzzleInputResolveResult ResolvePress(PointerInputContext pointerContext)
+        {
+            InputHitResult[] hitResults = pointerContext.PressHitResults;
+            if (hitResults == null || hitResults.Length == 0)
+            {
+                hitResults = pointerContext.HitResults;
+            }
+
+            return Resolve(hitResults);
+        }
+
+        /// <summary>
+        /// 从指定输入命中结果中筛选首个命中的 PuzzleView 与 SlotView。
+        /// </summary>
+        /// <param name="hitResults">要解析的输入命中结果数组。</param>
+        /// <returns>当前命中的 PuzzleCore 解析结果。</returns>
+        private static PuzzleInputResolveResult Resolve(InputHitResult[] hitResults)
+        {
             PuzzleInputResolveResult result = default;
-            InputHitResult[] hitResults = pointerContext.HitResults;
             if (hitResults == null || hitResults.Length == 0)
             {
                 return result;

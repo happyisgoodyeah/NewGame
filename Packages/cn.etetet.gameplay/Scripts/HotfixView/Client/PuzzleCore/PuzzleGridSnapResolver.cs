@@ -135,7 +135,14 @@ namespace ET.Client
     /// </summary>
     public static class PuzzleGridSnapResolver
     {
+        /// <summary>
+        /// 角落格内区分角吸附和边吸附的三分区阈值
+        /// </summary>
         private const float CornerThirdThreshold = 1f / 3f;
+
+        /// <summary>
+        /// 八方向判定时每个方向边界使用的半扇区角度
+        /// </summary>
         private const float DirectionSectorAngle = 22.5f;
 
         /// <summary>
@@ -155,11 +162,13 @@ namespace ET.Client
                 return false;
             }
 
+            // 未触碰 Grid 碰撞范围时不产生候选吸附目标
             if (!puzzleView.BodyCollider2D.bounds.Intersects(gridView.CompositeCollider2D.bounds))
             {
                 return false;
             }
 
+            // 以 Puzzle 原点格世界坐标反查最近 Grid 坐标作为候选锚点
             Vector3 originWorldPosition = puzzleView.GetOriginWorldPosition();
             Vector2 gridCoordinate = gridView.WorldToGridCoordinate(originWorldPosition);
             int anchorX = Mathf.Clamp(Mathf.RoundToInt(gridCoordinate.x), 0, grid.Width - 1);
@@ -170,6 +179,7 @@ namespace ET.Client
                 return false;
             }
 
+            // 保留连续格坐标用于判断候选锚点位于边、角还是中心区域
             snapTarget = new PuzzleGridSnapTarget()
             {
                 GridSlot = gridSlot,
@@ -197,11 +207,14 @@ namespace ET.Client
                 return false;
             }
 
+            // 只有 Puzzle 主碰撞体触碰 Grid 碰撞范围时才尝试进入吸附
+            // 成本低 可以接受此处update检测
             if (!puzzleView.BodyCollider2D.bounds.Intersects(gridView.CompositeCollider2D.bounds))
             {
                 return false;
             }
 
+            // 用 Grid 碰撞体最近点作为入口接触参考，寻找双方最接近的外圈 Slot
             Vector3 contactWorldPosition = gridView.CompositeCollider2D.ClosestPoint(puzzleView.Transform.position);
             Slot gridEdgeSlot = grid.GetClosestEdgeSlot(gridView, contactWorldPosition);
             Slot puzzleEdgeSlot = puzzle.GetClosestEntrySlot(puzzleView, contactWorldPosition);
@@ -210,10 +223,13 @@ namespace ET.Client
                 return false;
             }
 
+            // 根据接触方向和 Puzzle 形状格偏移反推原点锚点
             Vector3 gridSlotWorldPosition = gridView.GetSlotWorldPosition(gridEdgeSlot);
             Vector3 puzzleContactWorldPosition = puzzleView.BodyCollider2D.ClosestPoint(gridSlotWorldPosition);
             GridContactRegion region = ResolveEntryRegion(grid, gridEdgeSlot, gridSlotWorldPosition, puzzleContactWorldPosition);
             GetRegionOffset(region, out int regionOffsetX, out int regionOffsetY);
+            
+            //考虑旋转
             puzzle.GetRotatedOffset(puzzleEdgeSlot, out int puzzleOffsetX, out int puzzleOffsetY);
 
             int anchorX = gridEdgeSlot.X + regionOffsetX - puzzleOffsetX;

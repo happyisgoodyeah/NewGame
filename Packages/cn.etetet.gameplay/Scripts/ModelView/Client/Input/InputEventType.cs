@@ -45,7 +45,7 @@ namespace ET.Client
     }
 
     /// <summary>
-    /// 通用指针输入上下文，输入层只发布原始信息，不解释业务语义。
+    /// 通用指针输入上下文，输入层负责采集基础信息并携带手势判定所需状态
     /// </summary>
     public struct PointerInputContext
     {
@@ -83,6 +83,11 @@ namespace ET.Client
         /// 当前指针位置命中的全部结果数组。
         /// </summary>
         public InputHitResult[] HitResults;
+
+        /// <summary>
+        /// 本次按压开始时命中的全部结果数组，适合拖拽和点击使用固定起始目标
+        /// </summary>
+        public InputHitResult[] PressHitResults;
     }
 
     /// <summary>
@@ -122,6 +127,39 @@ namespace ET.Client
     /// 指针点击事件。
     /// </summary>
     public struct PointerClick
+    {
+        /// <summary>
+        /// 本次事件的输入上下文。
+        /// </summary>
+        public PointerInputContext Context;
+    }
+
+    /// <summary>
+    /// 指针拖拽开始事件
+    /// </summary>
+    public struct PointerDragStart
+    {
+        /// <summary>
+        /// 本次事件的输入上下文。
+        /// </summary>
+        public PointerInputContext Context;
+    }
+
+    /// <summary>
+    /// 指针拖拽持续事件
+    /// </summary>
+    public struct PointerDrag
+    {
+        /// <summary>
+        /// 本次事件的输入上下文。
+        /// </summary>
+        public PointerInputContext Context;
+    }
+
+    /// <summary>
+    /// 指针拖拽结束事件
+    /// </summary>
+    public struct PointerDragEnd
     {
         /// <summary>
         /// 本次事件的输入上下文。

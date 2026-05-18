@@ -24,6 +24,11 @@ namespace ET.Client
         public bool IsPointerPressed { get; set; }
 
         /// <summary>
+        /// 当前按压是否已经进入通用拖拽手势
+        /// </summary>
+        public bool IsPointerDragging { get; set; }
+
+        /// <summary>
         /// 本次按压开始时的屏幕坐标。
         /// </summary>
         public Vector2 PressScreenPosition { get; set; }
@@ -37,5 +42,10 @@ namespace ET.Client
         /// 本次按压开始时的未缩放时间。
         /// </summary>
         public float PressStartTime { get; set; }
+
+        /// <summary>
+        /// 本次按压开始时命中的全部结果数组
+        /// </summary>
+        public InputHitResult[] PressHitResults { get; set; }
     }
 }

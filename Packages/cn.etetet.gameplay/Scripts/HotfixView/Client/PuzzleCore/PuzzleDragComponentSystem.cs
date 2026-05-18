@@ -10,11 +10,34 @@ namespace ET.Client
     [EntitySystemOf(typeof(PuzzleDragComponent))]
     public static partial class PuzzleDragComponentSystem
     {
+        /// <summary>
+        /// 自由跟随指针时的移动缓动时长
+        /// </summary>
         private const float FreeFollowTweenDuration = 0.08f;
+
+        /// <summary>
+        /// 吸附预览移动到候选格的缓动时长
+        /// </summary>
         private const float SnapTweenDuration = 0.145f;
+
+        /// <summary>
+        /// 吸附预览使用 OutBack 曲线时的回弹强度
+        /// </summary>
         private const float SnapEaseOvershoot = 0.72f;
+
+        /// <summary>
+        /// 拖拽结束后落位或回退的缓动时长
+        /// </summary>
         private const float SettleTweenDuration = 0.12f;
+
+        /// <summary>
+        /// 吸附模式下指针触发格子步进的半格阈值
+        /// </summary>
         private const float SnapStepThreshold = 0.5f;
+
+        /// <summary>
+        /// 判断移动目标是否重复时使用的平方距离容差
+        /// </summary>
         private const float MoveTargetEpsilonSqr = 0.000001f;
 
         /// <summary>
@@ -86,6 +109,7 @@ namespace ET.Client
             self.DragStartAnchorX = puzzle.AnchorX;
             self.DragStartAnchorY = puzzle.AnchorY;
             self.LastPointerWorldPosition = pointerContext.WorldPosition;
+
             puzzleView.BringToFront();
 
             Grid grid = puzzle.Scene().GetGrid();
@@ -286,15 +310,18 @@ namespace ET.Client
                 return;
             }
 
+            // 未接触 Grid 前只让 Puzzle 平滑追随指针
             self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
 
+            // 首次接触 Grid 时解析一个候选吸附锚点，解析失败则继续自由跟随
             if (!puzzle.TryResolveEntrySnapTarget(grid, out PuzzleGridSnapTarget snapTarget))
             {
                 return;
             }
 
+            // 切入 GridSnap 后由离散锚点驱动后续拖拽移动
             puzzle.ClearPlacement(grid);
             self.SnapAnchorX = snapTarget.AnchorX;
             self.SnapAnchorY = snapTarget.AnchorY;
@@ -406,15 +433,19 @@ namespace ET.Client
         private static void PlayMoveTween(this PuzzleDragComponent self, PuzzleView puzzleView, Vector3 targetWorldPosition, float duration, Ease ease, float overshoot = 0f)
         {
             Transform parentTransform = puzzleView.Transform.parent;
+            // Tween 走 localPosition，先把世界目标折算到 PuzzleView 父节点空间
             Vector3 targetLocalPosition = parentTransform != null ? parentTransform.InverseTransformPoint(targetWorldPosition) : targetWorldPosition;
+            //判断目标是否变化
             bool isSameTarget = self.HasMoveTargetLocalPosition && (self.MoveTargetLocalPosition - targetLocalPosition).sqrMagnitude <= MoveTargetEpsilonSqr;
             if (self.MoveTween != null && self.MoveTween.IsActive())
             {
+                // 高频拖拽更新中目标未变化时不重启 Tween
                 if (isSameTarget)
                 {
                     return;
                 }
 
+                // 复用当前 Tween 改终点，避免每帧创建和销毁 Tween
                 self.MoveTargetLocalPosition = targetLocalPosition;
                 self.HasMoveTargetLocalPosition = true;
                 self.MoveTween.ChangeEndValue(targetLocalPosition, duration, true);

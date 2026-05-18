@@ -11,11 +11,6 @@ namespace ET.Client
         public const float GridCellSize = 3f;
 
         /// <summary>
-        /// 左键按下后判定为正式拖拽的屏幕位移阈值。
-        /// </summary>
-        public const float DragStartScreenThreshold = 12f;
-
-        /// <summary>
         /// 拖拽中拼图主图临时抬高到的排序值。
         /// </summary>
         public const int DraggingSortingOrder = 100;
