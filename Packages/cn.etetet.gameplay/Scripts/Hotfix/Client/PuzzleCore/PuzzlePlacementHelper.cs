@@ -191,6 +191,15 @@ namespace ET.Client
             self.SetAnchor(anchorX, anchorY);
             self.State = PuzzleState.Placed;
             grid.RefreshStatistics();
+            if (!grid.CompletionPublished && grid.IsCompleted())
+            {
+                grid.CompletionPublished = true;
+                EventSystem.Instance.Publish(grid.Scene(), new PuzzleLevelCompleted()
+                {
+                    Grid = grid,
+                    GridConfigId = grid.GridConfigId,
+                });
+            }
         }
     }
 }

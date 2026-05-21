@@ -16,7 +16,7 @@ namespace ET.Client
         private const float BlockedRotationTweenDuration = 0.1f;
 
         /// <summary>
-        /// 创建 Puzzle 场景对象，并绑定主图和碰撞组件。
+        /// 创建 Puzzle 场景对象，并绑定主图、多边形碰撞体和锚点结构
         /// </summary>
         [EntitySystem]
         private static void Awake(this PuzzleView self, GameObject prefab, Vector3 localPosition)
@@ -36,10 +36,16 @@ namespace ET.Client
             self.Transform = instance.transform;
             self.SpriteRenderer = instance.GetComponent<SpriteRenderer>();
             self.PolygonCollider2D = instance.GetComponent<PolygonCollider2D>();
+            if (self.PolygonCollider2D == null)
+            {
+                throw new UnityException("puzzle prefab must contain PolygonCollider2D");
+            }
+
             self.BodyCollider2D = self.PolygonCollider2D;
             self.Rigidbody2D = instance.GetComponent<Rigidbody2D>();
             self.SlotAnchorTransforms = self.FindSlotAnchorTransforms();
             self.SlotAnchorTransform = self.FindOriginSlotAnchorTransform();
+            self.DisableSlotAnchorColliders();
             self.MoveMode = PuzzleMoveMode.FreeFollow;
             self.RotationTween = null;
             self.BindEntityReference(instance);
@@ -233,6 +239,29 @@ namespace ET.Client
             }
 
             return results;
+        }
+
+        /// <summary>
+        /// 关闭 Puzzle 子 Slot 的矩形锚点碰撞体，避免它们参与输入和吸附接触
+        /// </summary>
+        /// <param name="self">当前 PuzzleView</param>
+        private static void DisableSlotAnchorColliders(this PuzzleView self)
+        {
+            if (self.Transform == null)
+            {
+                return;
+            }
+
+            BoxCollider2D[] boxColliders = self.Transform.GetComponentsInChildren<BoxCollider2D>(true);
+            foreach (BoxCollider2D boxCollider in boxColliders)
+            {
+                if (boxCollider == null || boxCollider.transform == self.Transform)
+                {
+                    continue;
+                }
+
+                boxCollider.enabled = false;
+            }
         }
 
         /// <summary>

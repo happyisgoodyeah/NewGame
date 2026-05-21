@@ -146,24 +146,50 @@ namespace ET.Client
         private const float DirectionSectorAngle = 22.5f;
 
         /// <summary>
-        /// 尝试根据当前 Puzzle 主体与 Grid 的接触情况解析候选原点格。
+        /// 认为两个碰撞体已经发生接触的距离容差
         /// </summary>
-        /// <param name="puzzle">当前拖拽中的 Puzzle。</param>
-        /// <param name="grid">关卡中的唯一 Grid。</param>
-        /// <param name="snapTarget">返回候选吸附目标。</param>
-        /// <returns>是否成功解析到候选原点格。</returns>
+        private const float ColliderContactEpsilon = 0.0001f;
+
+        /// <summary>
+        /// Puzzle 多边形与某个 Grid Slot 盒碰撞体的接触结果
+        /// </summary>
+        private struct GridSlotContact
+        {
+            /// <summary>
+            /// 接触到的 Grid Slot
+            /// </summary>
+            public Slot GridSlot;
+
+            /// <summary>
+            /// Puzzle 碰撞体上的接触参考点
+            /// </summary>
+            public Vector3 PuzzleWorldPosition;
+
+            /// <summary>
+            /// 双方接触点的折中世界坐标
+            /// </summary>
+            public Vector3 ContactWorldPosition;
+        }
+
+        /// <summary>
+        /// 尝试根据 Puzzle 多边形与 Grid Slot 的真实接触解析候选原点格
+        /// </summary>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">关卡中的唯一 Grid</param>
+        /// <param name="snapTarget">返回候选吸附目标</param>
+        /// <returns>是否成功解析到候选原点格</returns>
         public static bool TryResolveSnapTarget(this Puzzle puzzle, Grid grid, out PuzzleGridSnapTarget snapTarget)
         {
             snapTarget = default;
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
             GridView gridView = grid?.GetComponent<GridView>();
-            if (puzzleView == null || gridView == null || puzzleView.Transform == null || puzzleView.BodyCollider2D == null || gridView.CompositeCollider2D == null)
+            if (puzzleView == null || gridView == null || puzzleView.Transform == null || puzzleView.BodyCollider2D == null)
             {
                 return false;
             }
 
-            // 未触碰 Grid 碰撞范围时不产生候选吸附目标
-            if (!puzzleView.BodyCollider2D.bounds.Intersects(gridView.CompositeCollider2D.bounds))
+            // 未真实触碰 Grid Slot 时不产生候选吸附目标
+            if (!puzzle.TryResolveGridSlotContact(grid, false, out _))
             {
                 return false;
             }
@@ -191,33 +217,31 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 尝试按 Develop 项目的外圈 Slot 接近规则解析第一次吸附的候选原点格。
+        /// 尝试按真实碰撞接触解析第一次吸附的候选原点格
         /// </summary>
-        /// <param name="puzzle">当前拖拽中的 Puzzle。</param>
-        /// <param name="grid">目标 Grid。</param>
-        /// <param name="snapTarget">返回候选吸附目标。</param>
-        /// <returns>是否成功解析到候选吸附目标。</returns>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">目标 Grid</param>
+        /// <param name="snapTarget">返回候选吸附目标</param>
+        /// <returns>是否成功解析到候选吸附目标</returns>
         public static bool TryResolveEntrySnapTarget(this Puzzle puzzle, Grid grid, out PuzzleGridSnapTarget snapTarget)
         {
             snapTarget = default;
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
             GridView gridView = grid?.GetComponent<GridView>();
-            if (puzzleView == null || gridView == null || puzzleView.BodyCollider2D == null || gridView.CompositeCollider2D == null)
+            if (puzzleView == null || gridView == null || puzzleView.BodyCollider2D == null)
             {
                 return false;
             }
 
-            // 只有 Puzzle 主碰撞体触碰 Grid 碰撞范围时才尝试进入吸附
-            // 成本低 可以接受此处update检测
-            if (!puzzleView.BodyCollider2D.bounds.Intersects(gridView.CompositeCollider2D.bounds))
+            // 只有 Puzzle 多边形真实触碰 Grid 外圈 Slot 时才尝试进入吸附
+            if (!puzzle.TryResolveGridSlotContact(grid, true, out GridSlotContact gridSlotContact))
             {
                 return false;
             }
 
-            // 用 Grid 碰撞体最近点作为入口接触参考，寻找双方最接近的外圈 Slot
-            Vector3 contactWorldPosition = gridView.CompositeCollider2D.ClosestPoint(puzzleView.Transform.position);
-            Slot gridEdgeSlot = grid.GetClosestEdgeSlot(gridView, contactWorldPosition);
-            Slot puzzleEdgeSlot = puzzle.GetClosestEntrySlot(puzzleView, contactWorldPosition);
+            // 用真实碰撞接触点寻找双方最接近的外圈 Slot
+            Slot gridEdgeSlot = gridSlotContact.GridSlot;
+            Slot puzzleEdgeSlot = puzzle.GetClosestEntrySlot(puzzleView, gridSlotContact.ContactWorldPosition);
             if (gridEdgeSlot == null || puzzleEdgeSlot == null)
             {
                 return false;
@@ -225,7 +249,7 @@ namespace ET.Client
 
             // 根据接触方向和 Puzzle 形状格偏移反推原点锚点
             Vector3 gridSlotWorldPosition = gridView.GetSlotWorldPosition(gridEdgeSlot);
-            Vector3 puzzleContactWorldPosition = puzzleView.BodyCollider2D.ClosestPoint(gridSlotWorldPosition);
+            Vector3 puzzleContactWorldPosition = gridSlotContact.PuzzleWorldPosition;
             GridContactRegion region = ResolveEntryRegion(grid, gridEdgeSlot, gridSlotWorldPosition, puzzleContactWorldPosition);
             GetRegionOffset(region, out int regionOffsetX, out int regionOffsetY);
             
@@ -262,33 +286,27 @@ namespace ET.Client
 
 
         /// <summary>
-        /// 判断当前 Puzzle 主体是否仍与 Grid 的可放置区域保持接触。
+        /// 判断当前 Puzzle 多边形是否仍与任意 Grid Slot 盒碰撞体保持接触
         /// </summary>
-        /// <param name="puzzle">当前拖拽中的 Puzzle。</param>
-        /// <param name="grid">关卡中的唯一 Grid。</param>
-        /// <returns>当前是否仍和 Grid 保持接触。</returns>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">关卡中的唯一 Grid</param>
+        /// <returns>当前是否仍和 Grid 保持接触</returns>
         public static bool IsTouchingGrid(this Puzzle puzzle, Grid grid)
         {
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
-            GridView gridView = grid?.GetComponent<GridView>();
-            return puzzleView != null
-                    && gridView != null
-                    && puzzleView.BodyCollider2D != null
-                    && gridView.CompositeCollider2D != null
-                    && puzzleView.BodyCollider2D.bounds.Intersects(gridView.CompositeCollider2D.bounds);
+            return puzzleView != null && puzzleView.BodyCollider2D != null && puzzle.TryResolveGridSlotContact(grid, false, out _);
         }
 
         /// <summary>
-        /// 判断当前 Puzzle 的全部形状格锚点是否都已经落入 Grid 碰撞范围。
+        /// 判断当前 Puzzle 的全部形状格锚点是否都已经落入 Grid Slot 盒碰撞体
         /// </summary>
-        /// <param name="puzzle">当前拖拽中的 Puzzle。</param>
-        /// <param name="grid">目标 Grid。</param>
-        /// <returns>全部形状格是否都在 Grid 内。</returns>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">目标 Grid</param>
+        /// <returns>全部形状格是否都在 Grid 内</returns>
         public static bool IsFullyInsideGrid(this Puzzle puzzle, Grid grid)
         {
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
-            GridView gridView = grid?.GetComponent<GridView>();
-            if (puzzleView == null || gridView == null || gridView.CompositeCollider2D == null || puzzle.ChildrenCount() <= 0)
+            if (puzzleView == null || grid == null || puzzle.ChildrenCount() <= 0)
             {
                 return false;
             }
@@ -302,7 +320,7 @@ namespace ET.Client
                 }
 
                 Transform slotAnchorTransform = puzzleView.GetSlotAnchorTransform(puzzleSlot);
-                if (slotAnchorTransform == null || !gridView.CompositeCollider2D.bounds.Contains(slotAnchorTransform.position))
+                if (slotAnchorTransform == null || !grid.TryGetGridSlotAtWorldPosition(slotAnchorTransform.position, out _))
                 {
                     return false;
                 }
@@ -338,6 +356,145 @@ namespace ET.Client
                     && pointerWorldPosition.x <= gridCenter.x + halfGridWidth + puzzleWidth * 0.5f
                     && pointerWorldPosition.y >= gridCenter.y - halfGridHeight - puzzleHeight * 0.5f
                     && pointerWorldPosition.y <= gridCenter.y + halfGridHeight + puzzleHeight * 0.5f;
+        }
+
+        /// <summary>
+        /// 用 Puzzle 多边形和 Grid Slot BoxCollider2D 解析最近的真实接触
+        /// </summary>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">目标 Grid</param>
+        /// <param name="edgeOnly">是否只检查 Grid 外圈 Slot</param>
+        /// <param name="contact">返回最近接触结果</param>
+        /// <returns>是否找到真实接触</returns>
+        private static bool TryResolveGridSlotContact(this Puzzle puzzle, Grid grid, bool edgeOnly, out GridSlotContact contact)
+        {
+            contact = default;
+            PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
+            Collider2D puzzleCollider = puzzleView?.BodyCollider2D;
+            if (grid == null || puzzleCollider == null || !puzzleCollider.enabled || !puzzleCollider.gameObject.activeInHierarchy || grid.ChildrenCount() <= 0)
+            {
+                return false;
+            }
+
+            bool hasContact = false;
+            float bestScore = float.MaxValue;
+            Vector3 puzzleCenter = puzzleCollider.bounds.center;
+            foreach (Entity child in grid.Children.Values)
+            {
+                Slot gridSlot = child as Slot;
+                if (gridSlot == null || (edgeOnly && !grid.IsEdgeSlot(gridSlot)))
+                {
+                    continue;
+                }
+
+                if (!TryGetGridSlotBoxCollider(gridSlot, out BoxCollider2D gridSlotCollider))
+                {
+                    continue;
+                }
+
+                if (!TryGetColliderContact(puzzleCollider, gridSlotCollider, out ColliderDistance2D distance))
+                {
+                    continue;
+                }
+
+                Vector3 puzzleWorldPosition = ToVector3(distance.pointA);
+                Vector3 gridWorldPosition = ToVector3(distance.pointB);
+                Vector3 contactWorldPosition = (puzzleWorldPosition + gridWorldPosition) * 0.5f;
+                float score = (contactWorldPosition - puzzleCenter).sqrMagnitude;
+                if (hasContact && score >= bestScore)
+                {
+                    continue;
+                }
+
+                hasContact = true;
+                bestScore = score;
+                contact = new GridSlotContact()
+                {
+                    GridSlot = gridSlot,
+                    PuzzleWorldPosition = puzzleWorldPosition,
+                    ContactWorldPosition = contactWorldPosition,
+                };
+            }
+
+            return hasContact;
+        }
+
+        /// <summary>
+        /// 获取 Grid Slot 上参与吸附检测的盒碰撞体
+        /// </summary>
+        /// <param name="gridSlot">要检查的 Grid Slot</param>
+        /// <param name="boxCollider2D">返回找到的 BoxCollider2D</param>
+        /// <returns>是否找到可用盒碰撞体</returns>
+        private static bool TryGetGridSlotBoxCollider(Slot gridSlot, out BoxCollider2D boxCollider2D)
+        {
+            boxCollider2D = null;
+            SlotView slotView = gridSlot?.GetComponent<SlotView>();
+            boxCollider2D = slotView?.Collider2D as BoxCollider2D;
+            return boxCollider2D != null && boxCollider2D.enabled && boxCollider2D.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// 判断两个二维碰撞体是否已经真实接触
+        /// </summary>
+        /// <param name="puzzleCollider">Puzzle 使用的多边形碰撞体</param>
+        /// <param name="gridSlotCollider">Grid Slot 使用的盒碰撞体</param>
+        /// <param name="distance">返回 Unity 计算的碰撞体距离信息</param>
+        /// <returns>两个碰撞体是否接触或重叠</returns>
+        private static bool TryGetColliderContact(Collider2D puzzleCollider, BoxCollider2D gridSlotCollider, out ColliderDistance2D distance)
+        {
+            distance = default;
+            if (puzzleCollider == null || gridSlotCollider == null || !puzzleCollider.enabled || !gridSlotCollider.enabled)
+            {
+                return false;
+            }
+
+            distance = puzzleCollider.Distance(gridSlotCollider);
+            return distance.isValid && (distance.isOverlapped || distance.distance <= ColliderContactEpsilon);
+        }
+
+        /// <summary>
+        /// 按世界坐标查询命中的 Grid Slot 盒碰撞体
+        /// </summary>
+        /// <param name="grid">目标 Grid</param>
+        /// <param name="worldPosition">待检测的世界坐标</param>
+        /// <param name="gridSlot">返回命中的 Grid Slot</param>
+        /// <returns>是否命中某个 Grid Slot</returns>
+        private static bool TryGetGridSlotAtWorldPosition(this Grid grid, Vector3 worldPosition, out Slot gridSlot)
+        {
+            gridSlot = null;
+            if (grid == null || grid.ChildrenCount() <= 0)
+            {
+                return false;
+            }
+
+            foreach (Entity child in grid.Children.Values)
+            {
+                Slot slot = child as Slot;
+                if (slot == null || !TryGetGridSlotBoxCollider(slot, out BoxCollider2D boxCollider2D))
+                {
+                    continue;
+                }
+
+                if (!boxCollider2D.OverlapPoint(worldPosition))
+                {
+                    continue;
+                }
+
+                gridSlot = slot;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 将二维世界坐标补齐为三维世界坐标
+        /// </summary>
+        /// <param name="point">二维世界坐标</param>
+        /// <returns>三维世界坐标</returns>
+        private static Vector3 ToVector3(Vector2 point)
+        {
+            return new Vector3(point.x, point.y, 0f);
         }
 
         /// <summary>
@@ -557,41 +714,6 @@ namespace ET.Client
                     deltaY = 0;
                     return;
             }
-        }
-
-        /// <summary>
-        /// 获取距离接触点最近的 Grid 外圈 Slot。
-        /// </summary>
-        /// <param name="grid">目标 Grid。</param>
-        /// <param name="gridView">目标 GridView。</param>
-        /// <param name="contactWorldPosition">接触点世界坐标。</param>
-        /// <returns>最近的外圈 Slot。</returns>
-        private static Slot GetClosestEdgeSlot(this Grid grid, GridView gridView, Vector3 contactWorldPosition)
-        {
-            Slot closestSlot = null;
-            float closestDistance = float.MaxValue;
-            if (grid == null || gridView == null || grid.ChildrenCount() <= 0)
-            {
-                return null;
-            }
-
-            foreach (Entity child in grid.Children.Values)
-            {
-                Slot slot = child as Slot;
-                if (slot == null || !grid.IsEdgeSlot(slot))
-                {
-                    continue;
-                }
-
-                float distance = Vector2.Distance(contactWorldPosition, gridView.GetSlotWorldPosition(slot));
-                if (distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closestSlot = slot;
-                }
-            }
-
-            return closestSlot;
         }
 
         /// <summary>

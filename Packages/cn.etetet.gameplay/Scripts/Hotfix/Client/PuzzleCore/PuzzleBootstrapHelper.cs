@@ -6,9 +6,20 @@ namespace ET.Client
     public static class PuzzleBootstrapHelper
     {
         /// <summary>
-        /// 在当前场景中创建默认 Grid、Grid Slot 和 Puzzle 数据。
+        /// 在当前场景中创建默认 Grid、Grid Slot 和 Puzzle 数据
         /// </summary>
         public static Grid CreateDefaultGrid(Scene scene)
+        {
+            return CreateGrid(scene, PuzzleCoreConst.DefaultGridConfigId);
+        }
+
+        /// <summary>
+        /// 在当前场景中按指定配置创建 Grid、Grid Slot 和 Puzzle 数据
+        /// </summary>
+        /// <param name="scene">当前场景</param>
+        /// <param name="gridConfigId">Grid 配置 id</param>
+        /// <returns>创建完成的 Grid</returns>
+        public static Grid CreateGrid(Scene scene, int gridConfigId)
         {
             Grid existedGrid = scene.GetGrid();
             if (existedGrid != null)
@@ -16,7 +27,7 @@ namespace ET.Client
                 return existedGrid;
             }
 
-            GridConfig gridConfig = PuzzleCoreHelper.GetDefaultGridConfig();
+            GridConfig gridConfig = PuzzleCoreHelper.GetGridConfig(gridConfigId);
             int width = gridConfig.X;
             int height = gridConfig.Y;
             ValidateGridConfig(gridConfig, width, height);
@@ -29,7 +40,7 @@ namespace ET.Client
             CreatePuzzles(scene, gridConfig);
             grid.RefreshStatistics();
 
-            Log.Info($"create default grid success: scene={scene.Name} gridConfigId={gridConfig.Id} size={width}x{height} placeable={grid.PlaceableCount} occupied={grid.OccupiedCount} puzzleCount={gridConfig.PuzzleList.Count}");
+            Log.Info($"create grid success: scene={scene.Name} gridConfigId={gridConfig.Id} size={width}x{height} placeable={grid.PlaceableCount} occupied={grid.OccupiedCount} puzzleCount={gridConfig.PuzzleList.Count}");
             return grid;
         }
 

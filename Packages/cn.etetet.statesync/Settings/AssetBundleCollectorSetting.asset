@@ -222,3 +222,32 @@ MonoBehaviour:
         FilterRuleName: CollectPrefab
         AssetTags: 
         UserData: 
+    - GroupName: UI
+      GroupDesc: 
+      AssetTags: 
+      ActiveRuleName: EnableGroup
+      Collectors:
+      - CollectPath: Packages/cn.etetet.gameplay/Assets/GameRes/YIUI/GameMainPanel
+        CollectorGUID: b02e2a43aeb726448827dba23ad6cdb9
+        CollectorType: 0
+        AddressRuleName: AddressByFileName
+        PackRuleName: PackDirectory
+        FilterRuleName: CollectPrefab
+        AssetTags: 
+        UserData: 
+      - CollectPath: Packages/cn.etetet.gameplay/Assets/GameRes/YIUI/Archive
+        CollectorGUID: f2045763726520b4d8ac175fa765a9f9
+        CollectorType: 0
+        AddressRuleName: AddressByFileName
+        PackRuleName: PackDirectory
+        FilterRuleName: CollectPrefab
+        AssetTags: 
+        UserData: 
+      - CollectPath: Packages/cn.etetet.gameplay/Assets/GameRes/YIUI/Main
+        CollectorGUID: 91dee7d384cc2564bad1dc657c2851d9
+        CollectorType: 0
+        AddressRuleName: AddressByFileName
+        PackRuleName: PackDirectory
+        FilterRuleName: CollectPrefab
+        AssetTags: 
+        UserData: 

@@ -42,7 +42,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 为 Grid Slot 实例化配置指定的 Slot prefab。
+        /// 为 Grid Slot 实例化配置指定的 Slot prefab，并绑定独立 BoxCollider2D
         /// </summary>
         private static void BindGridSlotView(this SlotView self, Slot slot, GameObject prefab)
         {
@@ -64,12 +64,14 @@ namespace ET.Client
 
             self.GameObject = instance;
             self.Transform = instance.transform;
-            self.Collider2D = instance.GetComponent<Collider2D>();
-            if (self.Collider2D is BoxCollider2D boxCollider2D)
+            BoxCollider2D boxCollider2D = instance.GetComponent<BoxCollider2D>();
+            if (boxCollider2D == null)
             {
-                boxCollider2D.usedByComposite = true;
+                throw new UnityException("grid slot prefab must contain BoxCollider2D");
             }
 
+            boxCollider2D.usedByComposite = false;
+            self.Collider2D = boxCollider2D;
             self.OwnsGameObject = true;
             self.BindEntityReference();
         }

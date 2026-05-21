@@ -13,6 +13,7 @@ namespace ET.Client
             self.Height = height;
             self.PlaceableCount = 0;
             self.OccupiedCount = 0;
+            self.CompletionPublished = false;
         }
 
         /// <summary>
@@ -89,6 +90,16 @@ namespace ET.Client
 
             self.PlaceableCount = placeableCount;
             self.OccupiedCount = occupiedCount;
+        }
+
+        /// <summary>
+        /// 判断当前棋盘是否已经全部填满
+        /// </summary>
+        /// <param name="self">目标棋盘</param>
+        /// <returns>是否已经完成</returns>
+        public static bool IsCompleted(this Grid self)
+        {
+            return self != null && self.PlaceableCount > 0 && self.OccupiedCount >= self.PlaceableCount;
         }
     }
 }
