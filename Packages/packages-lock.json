@@ -218,6 +218,14 @@
         "cn.etetet.yiuiframework": "3.0.0"
       }
     },
+    "cn.etetet.yiuiaudio": {
+      "version": "file:cn.etetet.yiuiaudio",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "cn.etetet.core": "1.0.0"
+      }
+    },
     "cn.etetet.yiuieffect": {
       "version": "file:cn.etetet.yiuieffect",
       "depth": 0,
