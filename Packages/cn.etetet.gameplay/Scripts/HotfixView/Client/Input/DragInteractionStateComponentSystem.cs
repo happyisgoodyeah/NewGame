@@ -25,11 +25,11 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 确保当前场景已经挂载拖拽交互状态组件
+        /// 获取或挂载当前场景的拖拽交互状态组件
         /// </summary>
         /// <param name="self">当前场景</param>
         /// <returns>当前场景对应的拖拽交互状态组件</returns>
-        public static DragInteractionStateComponent EnsureDragInteractionState(this Scene self)
+        public static DragInteractionStateComponent GetOrAddDragInteractionState(this Scene self)
         {
             DragInteractionStateComponent interactionStateComponent = self.GetComponent<DragInteractionStateComponent>();
             if (interactionStateComponent == null)

@@ -2,6 +2,7 @@
     "name": "GameBase.Editor",
     "rootNamespace": "",
     "references": [
+        "ET.Model"
     ],
     "includePlatforms": [
         "Editor"

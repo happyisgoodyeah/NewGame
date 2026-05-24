@@ -40,7 +40,7 @@ namespace ET
         /// <returns>初始化结果</returns>
         public static async ETTask<SaveResult> Initialize(this SaveManagerComponent self, string saveRootDirectory, string gameVersion)
         {
-            if (string.IsNullOrWhiteSpace(saveRootDirectory))
+            if (saveRootDirectory.IsNullOrWhiteSpace())
             {
                 Log.Error("存档根目录为空");
                 return SaveResult.Failed;
@@ -49,7 +49,7 @@ namespace ET
             self.SaveRootDirectory = saveRootDirectory;
             self.GameVersion = gameVersion ?? string.Empty;
 
-            self.EnsureValidationDispatcher();
+            self.ResetValidationDispatcher();
             await self.LoadIndexAsync();
 
             SaveIndexComponent saveIndex = self.GetIndex();
@@ -80,7 +80,7 @@ namespace ET
             }
 
             SaveIndexComponent saveIndex = self.GetIndex();
-            string finalSlotId = string.IsNullOrWhiteSpace(slotId) ? self.GenerateSlotId() : slotId;
+            string finalSlotId = slotId.IsNullOrWhiteSpace() ? self.GenerateSlotId() : slotId;
             if (saveIndex.GetSlot(finalSlotId) != null)
             {
                 Log.Error($"存档槽位已存在: {finalSlotId}");
@@ -89,11 +89,10 @@ namespace ET
 
             SaveSlot saveSlot = saveIndex.AddChild<SaveSlot, string, SaveSlotType>(finalSlotId, slotType);
             SaveDataHeaderComponent header = saveSlot.GetHeader();
-            header.DisplayName = string.IsNullOrWhiteSpace(displayName) ? SaveConst.DefaultDisplayName : displayName;
+            header.DisplayName = displayName.IsNullOrWhiteSpace() ? SaveConst.DefaultDisplayName : displayName;
             header.GameVersion = self.GameVersion;
 
             SaveDataRoot saveDataRoot = saveSlot.AddChild<SaveDataRoot, string>(finalSlotId);
-            saveDataRoot.GetBasicData().SetPlayer(finalSlotId, header.DisplayName);
 
             self.SetCurrentSlot(finalSlotId);
             SaveResult result = await self.WriteSlotAsync(saveSlot, saveDataRoot);
@@ -120,6 +119,15 @@ namespace ET
                 return null;
             }
 
+            SaveDataRoot loadedDataRoot = saveSlot.GetDataRoot();
+            if (loadedDataRoot != null)
+            {
+                saveSlot.IsDataLoaded = true;
+                saveSlot.LastLoadedTime = DateTime.Now;
+                self.SetCurrentSlot(slotId);
+                return loadedDataRoot;
+            }
+
             SaveDataRoot saveDataRoot = await self.ReadDataRootAsync(saveSlot);
             if (saveDataRoot == null)
             {
@@ -142,7 +150,7 @@ namespace ET
         /// <returns>保存结果</returns>
         public static async ETTask<SaveResult> SaveCurrentAsync(this SaveManagerComponent self)
         {
-            if (string.IsNullOrWhiteSpace(self.CurrentSlotId))
+            if (self.CurrentSlotId.IsNullOrWhiteSpace())
             {
                 Log.Error("当前存档槽位为空");
                 return SaveResult.SlotNotFound;
@@ -249,15 +257,17 @@ namespace ET
         }
 
         /// <summary>
-        /// 确保校验分发组件已经挂载
+        /// 重置校验分发组件
         /// </summary>
         /// <param name="self">存档管理器</param>
-        private static void EnsureValidationDispatcher(this SaveManagerComponent self)
+        private static void ResetValidationDispatcher(this SaveManagerComponent self)
         {
-            if (self.GetValidationDispatcher() == null)
+            if (self.GetValidationDispatcher() != null)
             {
-                self.AddComponent<SaveValidationDispatcherComponent>();
+                self.RemoveComponent<SaveValidationDispatcherComponent>();
             }
+
+            self.AddComponent<SaveValidationDispatcherComponent>();
         }
 
         /// <summary>

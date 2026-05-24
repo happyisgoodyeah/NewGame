@@ -14,9 +14,17 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 按实体 id 获取当前场景下的 Puzzle。
+        /// 按实体 id 获取当前场景默认 Grid 下的 Puzzle
         /// </summary>
         public static Puzzle GetPuzzle(this Scene self, long puzzleId)
+        {
+            return self.GetGrid()?.GetPuzzle(puzzleId);
+        }
+
+        /// <summary>
+        /// 按实体 id 获取当前 Grid 下的 Puzzle
+        /// </summary>
+        public static Puzzle GetPuzzle(this Grid self, long puzzleId)
         {
             return self.GetChild<Puzzle>(puzzleId);
         }

@@ -63,14 +63,20 @@ namespace ET.Client
             }
 
             Scene root = self.Root();
-            await GameplaySaveHelper.SetCurrentLevelAsync(root.GetComponent<SaveManagerComponent>(), self.GridConfigId);
-            Scene currentScene = await PuzzleLevelRuntimeHelper.EnsurePuzzleSceneAsync(root);
+            Scene currentScene = root.CurrentScene();
             if (currentScene == null || currentScene.IsDisposed)
             {
+                Log.Error("Puzzle scene is not prepared");
                 return;
             }
 
-            PuzzleLevelRuntimeHelper.StartLevel(currentScene, self.GridConfigId);
+            if (!currentScene.IsPuzzleViewReady())
+            {
+                Log.Error($"Puzzle scene is not ready: {currentScene.Name}");
+                return;
+            }
+
+            await PuzzleLevelRuntimeHelper.StartLevelAsync(currentScene, self.GridConfigId);
             await self.DynamicEvent(root, new SelectLevelView_LevelSlotGoGrid()
             {
                 GridConfigId = self.GridConfigId,

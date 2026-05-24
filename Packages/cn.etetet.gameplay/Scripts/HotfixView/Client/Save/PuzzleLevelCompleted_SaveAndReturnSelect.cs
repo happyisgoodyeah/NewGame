@@ -13,10 +13,10 @@ namespace ET.Client
         /// <param name="args">关卡完成事件</param>
         protected override async ETTask Run(Scene scene, PuzzleLevelCompleted args)
         {
-            SaveResult saveResult = await GameplaySaveHelper.PassLevelAsync(scene.Root().GetComponent<SaveManagerComponent>(), args.GridConfigId);
+            SaveResult saveResult = await GameplaySaveHelper.CompleteLevelAsync(scene.Root().GetComponent<SaveManagerComponent>(), args.GridConfigId);
             if (saveResult != SaveResult.Success)
             {
-                Log.Error($"保存关卡完成进度失败: {saveResult}");
+                Log.Error($"保存关卡完成与图鉴解锁失败: {saveResult}");
             }
 
             PuzzleLevelRuntimeHelper.ClearCurrentLevel(scene);

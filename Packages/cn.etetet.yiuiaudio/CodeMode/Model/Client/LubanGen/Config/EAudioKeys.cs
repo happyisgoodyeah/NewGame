@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+using Sirenix.OdinInspector;
+
 namespace ET
 { 
     /// <summary>
@@ -17,12 +19,13 @@ namespace ET
         /// <summary>
         /// 无
         /// </summary>
+	    [LabelText("无")]
         None = 0,
         /// <summary>
         /// 登录2DBGM
         /// </summary>
+	    [LabelText("登录2DBGM")]
         A2D_Login_Bgm_2D = 1,
     }
-
 } 
 

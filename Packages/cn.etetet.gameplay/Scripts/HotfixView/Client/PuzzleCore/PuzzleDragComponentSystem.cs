@@ -205,7 +205,8 @@ namespace ET.Client
         /// </summary>
         /// <param name="self">当前拼图的拖拽组件。</param>
         /// <param name="grid">当前拼图所在的 Grid。</param>
-        public static void SnapToAnchor(this PuzzleDragComponent self, Grid grid)
+        /// <returns>是否成功结算到目标 Grid</returns>
+        public static bool SnapToAnchor(this PuzzleDragComponent self, Grid grid)
         {
             Puzzle puzzle = self.GetParent<Puzzle>();
             PuzzleView puzzleView = puzzle.GetComponent<PuzzleView>();
@@ -215,13 +216,13 @@ namespace ET.Client
             if (puzzleView == null || puzzleView.Transform == null || gridView == null)
             {
                 self.ClearDragState();
-                return;
+                return false;
             }
 
             if (puzzle.CheckPlacement(grid, anchorX, anchorY, out List<Slot> matchedGridSlots) != PuzzlePlacementCheckResult.Success)
             {
                 self.ClearDragState();
-                return;
+                return false;
             }
 
             if (self.IsGridSnapActive || puzzle.State != PuzzleState.Placed)
@@ -233,6 +234,7 @@ namespace ET.Client
             puzzleView.RestoreVisualPriority();
             self.PlayMoveTweenToOrigin(puzzleView, gridView.GetGridCoordinateWorldPosition(anchorX, anchorY), SettleTweenDuration, Ease.OutCubic);
             self.ClearDragState();
+            return true;
         }
 
         /// <summary>

@@ -17,12 +17,6 @@ namespace ET
         public int DataVersion { get; set; } = SaveConst.CurrentDataVersion;
 
         /// <summary>
-        /// 最近进入的关卡配置 id
-        /// </summary>
-        [BsonElement]
-        public int CurrentLevelConfigId { get; set; }
-
-        /// <summary>
         /// 已解锁关卡配置 id
         /// </summary>
         [BsonElement]

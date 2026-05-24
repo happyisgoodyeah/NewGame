@@ -25,7 +25,7 @@ namespace ET
         /// <returns>匹配的存档槽位</returns>
         public static SaveSlot GetSlot(this SaveIndexComponent self, string slotId)
         {
-            if (string.IsNullOrWhiteSpace(slotId) || self.ChildrenCount() == 0)
+            if (slotId.IsNullOrWhiteSpace() || self.ChildrenCount() == 0)
             {
                 return null;
             }

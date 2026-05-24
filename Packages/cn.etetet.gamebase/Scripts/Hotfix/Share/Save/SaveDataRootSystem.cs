@@ -17,17 +17,6 @@ namespace ET
             self.DataVersion = SaveConst.CurrentDataVersion;
             self.CreateTime = DateTime.Now;
             self.LastModifiedTime = self.CreateTime;
-            self.AddComponent<BasicSaveDataComponent>();
-        }
-
-        /// <summary>
-        /// 获取基础存档数据组件
-        /// </summary>
-        /// <param name="self">完整存档数据根</param>
-        /// <returns>基础存档数据组件</returns>
-        public static BasicSaveDataComponent GetBasicData(this SaveDataRoot self)
-        {
-            return self.GetComponent<BasicSaveDataComponent>();
         }
 
         /// <summary>

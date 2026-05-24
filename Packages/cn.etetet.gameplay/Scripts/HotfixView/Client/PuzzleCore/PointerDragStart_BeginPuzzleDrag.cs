@@ -1,17 +1,17 @@
 namespace ET.Client
 {
     /// <summary>
-    /// 在通用拖拽开始事件中启动 Puzzle 拖拽。
+    /// 在通用拖拽开始事件中启动 Puzzle 拖拽
     /// </summary>
     [Event(SceneType.Current)]
     public class PointerDragStart_BeginPuzzleDrag : AEvent<Scene, PointerDragStart>
     {
         /// <summary>
-        /// 从按压起始命中结果中解析 Puzzle，并在命中时启动对应拖拽组件。
+        /// 从按压起始命中结果中解析 Puzzle，并在命中时启动对应拖拽组件
         /// </summary>
         protected override async ETTask Run(Scene scene, PointerDragStart args)
         {
-            DragInteractionStateComponent interactionStateComponent = scene.EnsureDragInteractionState();
+            DragInteractionStateComponent interactionStateComponent = scene.GetOrAddDragInteractionState();
             if (interactionStateComponent.GetDraggingTarget() != null)
             {
                 await ETTask.CompletedTask;

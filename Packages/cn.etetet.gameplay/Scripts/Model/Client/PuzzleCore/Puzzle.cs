@@ -1,9 +1,9 @@
 namespace ET.Client
 {
     /// <summary>
-    /// 运行时拼图实体，持有形状格子、旋转和当前摆放状态。
+    /// 运行时拼图实体，持有形状格子、旋转和当前摆放状态
     /// </summary>
-    [ChildOf(typeof(Scene))]
+    [ChildOf(typeof(Grid))]
     public class Puzzle : Entity, IAwake<int>
     {
         /// <summary>

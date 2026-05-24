@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace ET.Client
 {
     /// <summary>
-    /// 成就面板入口
+    /// 图鉴面板入口
     /// </summary>
     public partial class ArchivePanelComponent : Entity
     {

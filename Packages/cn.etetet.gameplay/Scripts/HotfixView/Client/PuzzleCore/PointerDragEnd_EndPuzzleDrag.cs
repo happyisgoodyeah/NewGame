@@ -47,7 +47,10 @@ namespace ET.Client
             {
                 if (dragComponent.CanFinalizeGridSnap() && grid != null)
                 {
-                    dragComponent.SnapToAnchor(grid);
+                    if (dragComponent.SnapToAnchor(grid))
+                    {
+                        grid.TryPublishCompletion();
+                    }
                 }
                 else
                 {
@@ -70,6 +73,7 @@ namespace ET.Client
             if (placed)
             {
                 dragComponent.SnapToAnchor(grid);
+                grid.TryPublishCompletion();
                 return;
             }
 

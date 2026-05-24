@@ -7,19 +7,12 @@ namespace ET.Client
     public class AfterCreatePuzzle_CreatePuzzleView : AEvent<Scene, AfterCreatePuzzle>
     {
         /// <summary>
-        /// 等待 Unity 场景和 GridView 可用后创建 PuzzleView。
+        /// 在 Puzzle 数据创建完成后立即加载 PuzzleView
         /// </summary>
         protected override async ETTask Run(Scene scene, AfterCreatePuzzle args)
         {
             Puzzle puzzle = args.Puzzle;
-            await scene.WaitUntil(() => scene.IsDisposed || puzzle == null || puzzle.IsDisposed || scene.IsPuzzleViewReady() && scene.GetGrid()?.GetComponent<GridView>() != null);
             if (scene.IsDisposed || puzzle == null || puzzle.IsDisposed || puzzle.GetComponent<PuzzleView>() != null)
-            {
-                return;
-            }
-
-            Grid grid = scene.GetGrid();
-            if (grid?.GetComponent<GridView>() == null)
             {
                 return;
             }

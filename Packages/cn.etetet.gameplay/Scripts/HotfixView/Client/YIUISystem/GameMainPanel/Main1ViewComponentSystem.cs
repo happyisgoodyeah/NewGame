@@ -63,7 +63,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 打开成就面板
+        /// 打开图鉴面板
         /// </summary>
         /// <param name="self">主菜单视图</param>
         [YIUIInvoke(Main1ViewComponent.OnEventArchiveEnterInvoke)]

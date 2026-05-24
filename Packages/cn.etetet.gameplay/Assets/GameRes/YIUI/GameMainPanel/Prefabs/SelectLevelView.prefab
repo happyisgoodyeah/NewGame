@@ -999,8 +999,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u8FD4\u56DE\u83DC\u5355"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: dcfba031cf409c648972d07fc904722b, type: 2}
-  m_sharedMaterial: {fileID: -1085061103813781878, guid: dcfba031cf409c648972d07fc904722b,
+  m_fontAsset: {fileID: 11400000, guid: 452cb4c269bee1442b5dc016f71256b0, type: 2}
+  m_sharedMaterial: {fileID: -6666145184523286364, guid: 452cb4c269bee1442b5dc016f71256b0,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}

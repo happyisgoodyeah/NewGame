@@ -101,5 +101,26 @@ namespace ET.Client
         {
             return self != null && self.PlaceableCount > 0 && self.OccupiedCount >= self.PlaceableCount;
         }
+
+        /// <summary>
+        /// 在棋盘首次完成时发布关卡完成事件
+        /// </summary>
+        /// <param name="self">目标棋盘</param>
+        /// <returns>本次调用是否发布了完成事件</returns>
+        public static bool TryPublishCompletion(this Grid self)
+        {
+            if (self == null || self.CompletionPublished || !self.IsCompleted())
+            {
+                return false;
+            }
+
+            self.CompletionPublished = true;
+            EventSystem.Instance.Publish(self.Scene(), new PuzzleLevelCompleted()
+            {
+                Grid = self,
+                GridConfigId = self.GridConfigId,
+            });
+            return true;
+        }
     }
 }

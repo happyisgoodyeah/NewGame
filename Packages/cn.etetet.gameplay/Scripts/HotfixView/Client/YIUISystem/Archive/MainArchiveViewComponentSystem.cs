@@ -6,58 +6,58 @@ using System.Collections.Generic;
 namespace ET.Client
 {
     /// <summary>
-    /// 成就主视图逻辑
+    /// 图鉴主视图逻辑
     /// </summary>
     [FriendOf(typeof(MainArchiveViewComponent))]
     public static partial class MainArchiveViewComponentSystem
     {
         /// <summary>
-        /// 初始化成就主视图
+        /// 初始化图鉴主视图
         /// </summary>
-        /// <param name="self">成就主视图</param>
+        /// <param name="self">图鉴主视图</param>
         [EntitySystem]
         private static void YIUIInitialize(this MainArchiveViewComponent self)
         {
         }
 
         /// <summary>
-        /// 销毁成就主视图
+        /// 销毁图鉴主视图
         /// </summary>
-        /// <param name="self">成就主视图</param>
+        /// <param name="self">图鉴主视图</param>
         [EntitySystem]
         private static void Destroy(this MainArchiveViewComponent self)
         {
         }
 
         /// <summary>
-        /// 打开成就主视图并刷新已完成关卡列表
+        /// 打开图鉴主视图并刷新已解锁拼图列表
         /// </summary>
-        /// <param name="self">成就主视图</param>
+        /// <param name="self">图鉴主视图</param>
         /// <returns>是否打开成功</returns>
         [EntitySystem]
         private static async ETTask<bool> YIUIOpen(this MainArchiveViewComponent self)
         {
-            await GameplaySaveHelper.EnsureGameplaySaveAsync(self.Root().GetComponent<SaveManagerComponent>());
+            await GameplaySaveHelper.LoadGameplaySaveAsync(self.Root().GetComponent<SaveManagerComponent>());
             self.RefreshArchiveShowList();
             await ETTask.CompletedTask;
             return true;
         }
 
         /// <summary>
-        /// 将当前存档内已通关关卡同步到归档数据绑定
+        /// 将当前存档内已解锁拼图同步到图鉴数据绑定
         /// </summary>
-        /// <param name="self">成就主视图</param>
+        /// <param name="self">图鉴主视图</param>
         public static void RefreshArchiveShowList(this MainArchiveViewComponent self)
         {
-            LevelProgressSaveDataComponent progressData = GameplaySaveHelper.GetCurrentLevelProgress(self.Root().GetComponent<SaveManagerComponent>());
-            List<int> passedLevelIds = progressData?.PassedLevelIds ?? new List<int>();
-            self.u_DataArchiveShowList?.SetValue(passedLevelIds, true);
+            PuzzleArchiveSaveDataComponent archiveData = GameplaySaveHelper.GetCurrentPuzzleArchive(self.Root().GetComponent<SaveManagerComponent>());
+            List<int> unlockedPuzzleIds = archiveData?.UnlockedPuzzleIds ?? new List<int>();
+            self.u_DataArchiveShowList?.SetValue(unlockedPuzzleIds, true);
         }
 
         /// <summary>
-        /// 关闭成就面板
+        /// 关闭图鉴面板
         /// </summary>
-        /// <param name="self">成就主视图</param>
+        /// <param name="self">图鉴主视图</param>
         [YIUIInvoke(MainArchiveViewComponent.OnEventBackInvoke)]
         private static async ETTask OnEventBackInvoke(this MainArchiveViewComponent self)
         {

@@ -52,7 +52,7 @@ namespace ET.Client
         [EntitySystem]
         private static async ETTask<bool> YIUIOpen(this SelectLevelViewComponent self)
         {
-            await GameplaySaveHelper.EnsureGameplaySaveAsync(self.Root().GetComponent<SaveManagerComponent>());
+            await GameplaySaveHelper.LoadGameplaySaveAsync(self.Root().GetComponent<SaveManagerComponent>());
             self.MaxPage = GetMaxPage();
             self.NowPage = Math.Max(1, Math.Min(self.NowPage, self.MaxPage));
             self.Refresh();

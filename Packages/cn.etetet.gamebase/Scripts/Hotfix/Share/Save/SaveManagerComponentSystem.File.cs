@@ -151,7 +151,7 @@ namespace ET
                 {
                     string json = await File.ReadAllTextAsync(headerPath);
                     SaveDataHeaderComponent header = (SaveDataHeaderComponent)MongoHelper.FromJson(typeof(SaveDataHeaderComponent), json);
-                    if (string.IsNullOrWhiteSpace(header.SlotId) || saveIndex.GetSlot(header.SlotId) != null)
+                    if (header.SlotId.IsNullOrWhiteSpace() || saveIndex.GetSlot(header.SlotId) != null)
                     {
                         continue;
                     }

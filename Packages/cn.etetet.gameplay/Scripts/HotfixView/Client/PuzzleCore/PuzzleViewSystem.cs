@@ -5,7 +5,7 @@ using UnityEngine;
 namespace ET.Client
 {
     /// <summary>
-    /// PuzzleView 的创建和基础状态维护逻辑。
+    /// PuzzleView 的创建和基础状态维护逻辑
     /// </summary>
     [EntitySystemOf(typeof(PuzzleView))]
     public static partial class PuzzleViewSystem
@@ -21,7 +21,7 @@ namespace ET.Client
         [EntitySystem]
         private static void Awake(this PuzzleView self, GameObject prefab, Vector3 localPosition)
         {
-            PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
+            PuzzleSceneRoot puzzleSceneRoot = self.Scene().InitializePuzzleSceneRoot();
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             if (instance == null)
             {

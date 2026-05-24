@@ -14,7 +14,7 @@ namespace ET.Client
         [EntitySystem]
         private static void Awake(this GridView self, GameObject prefab, Vector3 localPosition, float cellSize)
         {
-            PuzzleSceneRoot puzzleSceneRoot = self.Scene().EnsureInitialized();
+            PuzzleSceneRoot puzzleSceneRoot = self.Scene().InitializePuzzleSceneRoot();
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             if (instance == null)
             {

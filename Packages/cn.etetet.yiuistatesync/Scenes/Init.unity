@@ -258,7 +258,6 @@ Transform:
   - {fileID: 1637747976}
   - {fileID: 630054496}
   - {fileID: 590194895}
-  - {fileID: 1348115857}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &575235022
@@ -457,7 +456,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 575235020}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1482325649894782617, guid: 4200f826ed726d4478d4d19000af33c4,
         type: 3}
@@ -524,12 +523,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4200f826ed726d4478d4d19000af33c4, type: 3}
---- !u!4 &1348115857 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6045290631660329121, guid: 4200f826ed726d4478d4d19000af33c4,
-    type: 3}
-  m_PrefabInstance: {fileID: 1348115856}
-  m_PrefabAsset: {fileID: 0}
 --- !u!20 &1348115858 stripped
 Camera:
   m_CorrespondingSourceObject: {fileID: 7867612178704196340, guid: 4200f826ed726d4478d4d19000af33c4,
@@ -1002,3 +995,4 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 575235020}
+  - {fileID: 1348115856}

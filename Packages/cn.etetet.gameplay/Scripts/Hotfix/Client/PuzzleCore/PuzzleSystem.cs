@@ -47,9 +47,14 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 向 Puzzle 中添加一个形状格 Slot，并发布 Slot 数据创建完成事件。
+        /// 向 Puzzle 中添加一个形状格 Slot，并按需发布 Slot 数据创建完成事件
         /// </summary>
-        public static Slot AddSlot(this Puzzle self, int x, int y)
+        /// <param name="self">目标 Puzzle</param>
+        /// <param name="x">形状格 X 坐标</param>
+        /// <param name="y">形状格 Y 坐标</param>
+        /// <param name="publishEvent">是否立即发布 Slot 创建事件</param>
+        /// <returns>创建完成的 Puzzle Slot</returns>
+        public static Slot AddSlot(this Puzzle self, int x, int y, bool publishEvent = true)
         {
             long slotId = SlotSystem.ToSlotId(x, y);
             if (self.GetChild<Slot>(slotId) != null)
@@ -63,7 +68,11 @@ namespace ET.Client
                 self.OriginSlotId = slot.Id;
             }
 
-            EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
+            if (publishEvent)
+            {
+                EventSystem.Instance.Publish(self.Scene(), new AfterCreateSlot() { Slot = slot });
+            }
+
             return slot;
         }
 

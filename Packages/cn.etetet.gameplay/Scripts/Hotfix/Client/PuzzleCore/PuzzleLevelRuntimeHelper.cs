@@ -10,11 +10,11 @@ namespace ET.Client
         private const string PuzzleSceneName = "Test";
 
         /// <summary>
-        /// 确保当前客户端已经进入 Puzzle 使用的 Unity 场景
+        /// 准备常驻 Puzzle 玩法场景
         /// </summary>
         /// <param name="root">客户端根场景</param>
         /// <returns>当前关卡逻辑场景</returns>
-        public static async ETTask<Scene> EnsurePuzzleSceneAsync(Scene root)
+        public static async ETTask<Scene> PreparePuzzleSceneAsync(Scene root)
         {
             Scene currentScene = root.CurrentScene();
             if (currentScene != null && !currentScene.IsDisposed && currentScene.Name == PuzzleSceneName)
@@ -40,7 +40,7 @@ namespace ET.Client
             List<Entity> needDisposeEntities = new List<Entity>();
             foreach (Entity child in scene.Children.Values)
             {
-                if (child is Grid or Puzzle)
+                if (child is Grid)
                 {
                     needDisposeEntities.Add(child);
                 }
@@ -58,10 +58,10 @@ namespace ET.Client
         /// <param name="scene">当前关卡逻辑场景</param>
         /// <param name="gridConfigId">Grid 配置 id</param>
         /// <returns>创建完成的 Grid</returns>
-        public static Grid StartLevel(Scene scene, int gridConfigId)
+        public static async ETTask<Grid> StartLevelAsync(Scene scene, int gridConfigId)
         {
             ClearCurrentLevel(scene);
-            return PuzzleBootstrapHelper.CreateGrid(scene, gridConfigId);
+            return await PuzzleBootstrapHelper.CreateGridAsync(scene, gridConfigId);
         }
     }
 }

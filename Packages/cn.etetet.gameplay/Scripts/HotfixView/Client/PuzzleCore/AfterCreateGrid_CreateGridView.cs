@@ -7,14 +7,19 @@ namespace ET.Client
     public class AfterCreateGrid_CreateGridView : AEvent<Scene, AfterCreateGrid>
     {
         /// <summary>
-        /// 等待 Unity 场景可用后创建 GridView，避免数据创建早于场景加载导致表现层缺失。
+        /// 在 Grid 数据创建完成后立即加载 GridView
         /// </summary>
         protected override async ETTask Run(Scene scene, AfterCreateGrid args)
         {
             Grid grid = args.Grid;
-            await scene.WaitUntil(() => scene.IsDisposed || grid == null || grid.IsDisposed || scene.IsPuzzleViewReady());
             if (scene.IsDisposed || grid == null || grid.IsDisposed || grid.GetComponent<GridView>() != null)
             {
+                return;
+            }
+
+            if (!scene.IsPuzzleViewReady())
+            {
+                Log.Error($"puzzle view scene is not ready: scene={scene.Name}");
                 return;
             }
 

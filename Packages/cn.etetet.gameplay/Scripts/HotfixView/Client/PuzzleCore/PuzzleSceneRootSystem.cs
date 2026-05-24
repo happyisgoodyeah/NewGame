@@ -5,7 +5,7 @@ using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 namespace ET.Client
 {
     /// <summary>
-    /// PuzzleSceneRoot 的初始化和根节点查找逻辑。
+    /// PuzzleSceneRoot 的初始化和根节点查找逻辑
     /// </summary>
     [EntitySystemOf(typeof(PuzzleSceneRoot))]
     public static partial class PuzzleSceneRootSystem
@@ -14,7 +14,7 @@ namespace ET.Client
         private const string GridRootName = "GridRoot";
 
         /// <summary>
-        /// 初始化缓存状态。
+        /// 初始化缓存状态
         /// </summary>
         [EntitySystem]
         private static void Awake(this PuzzleSceneRoot self)
@@ -25,7 +25,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 释放缓存引用。
+        /// 释放缓存引用
         /// </summary>
         [EntitySystem]
         private static void Destroy(this PuzzleSceneRoot self)
@@ -36,7 +36,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 优先按 ET Scene 名称解析对应的 Unity 场景，找不到时再回退到当前激活场景。
+        /// 优先按 ET Scene 名称解析对应的 Unity 场景，找不到时再回退到当前激活场景
         /// </summary>
         public static bool TryGetUnityScene(this Scene etScene, out UnityScene unityScene)
         {
@@ -60,19 +60,19 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 判断当前 ET 场景是否已经具备创建 PuzzleCore View 的场景与资源加载条件。
+        /// 判断当前 ET 场景是否已经具备创建 PuzzleCore View 的场景与资源加载条件
         /// </summary>
-        /// <param name="etScene">当前 ET 逻辑场景。</param>
-        /// <returns>是否可以安全创建 GridView、PuzzleView 和 SlotView。</returns>
+        /// <param name="etScene">当前 ET 逻辑场景</param>
+        /// <returns>是否可以安全创建 GridView、PuzzleView 和 SlotView</returns>
         public static bool IsPuzzleViewReady(this Scene etScene)
         {
             return etScene != null && !etScene.IsDisposed && etScene.TryGetUnityScene(out _) && etScene.GetComponent<ResourcesLoaderComponent>() != null;
         }
 
         /// <summary>
-        /// 确保当前 ET Scene 已经缓存了当前 Unity 场景中的 SceneRoot 和 GridRoot。
+        /// 初始化当前 ET Scene 对应的 Unity 场景根节点缓存
         /// </summary>
-        public static PuzzleSceneRoot EnsureInitialized(this Scene etScene)
+        public static PuzzleSceneRoot InitializePuzzleSceneRoot(this Scene etScene)
         {
             PuzzleSceneRoot puzzleSceneRoot = etScene.GetComponent<PuzzleSceneRoot>();
             if (puzzleSceneRoot == null)
@@ -110,7 +110,7 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 在目标 Unity 场景的根节点中查找 PuzzleCore 使用的 SceneRoot。
+        /// 在目标 Unity 场景的根节点中查找 PuzzleCore 使用的 SceneRoot
         /// </summary>
         private static Transform FindSceneRootTransform(UnityScene unityScene)
         {
