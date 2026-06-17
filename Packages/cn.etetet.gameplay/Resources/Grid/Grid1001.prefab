@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 149029530547483344}
+  - component: {fileID: 8033998988830001001}
   m_Layer: 0
   m_Name: Grid1001
   m_TagString: Untagged
@@ -34,37 +35,30 @@ Transform:
   - {fileID: 7913926064209492857}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &246251288695714493
-GameObject:
+--- !u!114 &8033998988830001001
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8103220814910584768}
-  m_Layer: 0
-  m_Name: Puzzle
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8103220814910584768
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 246251288695714493}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1831122372911535862}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_GameObject: {fileID: 167707863368894934}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47772adebe8f4d518d360cb5805fae80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  configId: 1005
+  configName: "\u7B2C\u4E94\u5173"
+  width: 4
+  height: 4
+  cellSize: 3
+  prefabPathOverride: Grid/Grid1001
+  gridWorkbookPath: Packages/cn.etetet.yiuilubangen/Luban/Config/Datas/Grid.xlsx
+  slotWorkbookPath: Packages/cn.etetet.yiuilubangen/Luban/Config/Datas/Slot.xlsx
+  puzzleWorkbookPath: Packages/cn.etetet.yiuilubangen/Luban/Config/Datas/Puzzle.xlsx
+  slotRootName: SlotTransform
+  puzzleRootName: PuzzleTransform
+  includeLubanMarkerColumn: 1
 --- !u!1 &2957764173946602122
 GameObject:
   m_ObjectHideFlags: 0
@@ -93,8 +87,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8103220814910584768}
+  m_Children: []
   m_Father: {fileID: 149029530547483344}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6726027395021041624
@@ -229,7 +222,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startAxis: 0
   constraint: 1
-  constraintCount: 3
+  constraintCount: 4
   cellSize: {x: 3, y: 3}
   spacing: {x: 0, y: 0}
   autoUpdateInEditor: 1

@@ -61,6 +61,7 @@ namespace ET.Client
             self.SnapAnchorY = 0;
             self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
+            self.IsWaitingGridContactRelease = false;
         }
 
         /// <summary>
@@ -85,6 +86,7 @@ namespace ET.Client
             self.SnapAnchorY = 0;
             self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
+            self.IsWaitingGridContactRelease = false;
         }
 
         /// <summary>
@@ -104,6 +106,7 @@ namespace ET.Client
             self.CacheInitialWorldPosition(puzzleView);
             self.IsDragging = true;
             self.IsGridSnapActive = false;
+            self.IsWaitingGridContactRelease = false;
             self.DragStartWorldPosition = puzzleView.Transform.position;
             self.DragStartState = puzzle.State;
             self.DragStartAnchorX = puzzle.AnchorX;
@@ -317,8 +320,19 @@ namespace ET.Client
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
 
+            // 退出吸附后必须先脱离真实接触，避免同一接触帧重新进入吸附
+            if (self.IsWaitingGridContactRelease)
+            {
+                if (puzzle.IsTouchingGrid(grid))
+                {
+                    return;
+                }
+
+                self.IsWaitingGridContactRelease = false;
+            }
+
             // 首次接触 Grid 时解析一个候选吸附锚点，解析失败则继续自由跟随
-            if (!puzzle.TryResolveEntrySnapTarget(grid, out PuzzleGridSnapTarget snapTarget))
+            if (!puzzle.TryResolveEntrySnapTarget(grid, pointerWorldPosition, out PuzzleGridSnapTarget snapTarget))
             {
                 return;
             }
@@ -356,6 +370,7 @@ namespace ET.Client
                 puzzle.State = PuzzleState.Dragging;
                 puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
                 self.IsGridSnapActive = false;
+                self.IsWaitingGridContactRelease = true;
                 self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
                 return;
             }
@@ -402,6 +417,7 @@ namespace ET.Client
             puzzle.State = PuzzleState.Dragging;
             puzzleView.MoveMode = PuzzleMoveMode.FreeFollow;
             self.IsGridSnapActive = false;
+            self.IsWaitingGridContactRelease = true;
             self.PlayMoveTween(puzzleView, pointerWorldPosition, FreeFollowTweenDuration, Ease.OutQuad);
         }
 
@@ -673,6 +689,7 @@ namespace ET.Client
             self.SnapAnchorY = 0;
             self.SnapRegion = (byte)GridContactRegion.Center;
             self.IsGridSnapActive = false;
+            self.IsWaitingGridContactRelease = false;
         }
     }
 }

@@ -34,11 +34,12 @@ namespace ET.Client
 
             self.GameObject = instance;
             self.Transform = instance.transform;
-            self.SpriteRenderer = instance.GetComponent<SpriteRenderer>();
-            self.PolygonCollider2D = instance.GetComponent<PolygonCollider2D>();
+            Transform visualRoot = instance.transform.Find("VisualRoot");
+            self.SpriteRenderer = ResolveSpriteRenderer(instance.transform, visualRoot);
+            self.PolygonCollider2D = ResolvePolygonCollider2D(instance.transform, visualRoot);
             if (self.PolygonCollider2D == null)
             {
-                throw new UnityException("puzzle prefab must contain PolygonCollider2D");
+                throw new UnityException("puzzle prefab root or VisualRoot must contain PolygonCollider2D");
             }
 
             self.BodyCollider2D = self.PolygonCollider2D;
@@ -51,6 +52,50 @@ namespace ET.Client
             self.BindEntityReference(instance);
             self.RefreshRotation();
             self.RestoreVisualPriority();
+        }
+
+        /// <summary>
+        /// 获取 Puzzle 主图渲染器，优先使用 VisualRoot 下的组件
+        /// </summary>
+        /// <param name="root">Puzzle 根节点</param>
+        /// <param name="visualRoot">Puzzle 视觉根节点</param>
+        /// <returns>主图渲染器</returns>
+        private static SpriteRenderer ResolveSpriteRenderer(Transform root, Transform visualRoot)
+        {
+            if (visualRoot != null)
+            {
+                SpriteRenderer visualSpriteRenderer = visualRoot.GetComponent<SpriteRenderer>();
+                if (visualSpriteRenderer != null)
+                {
+                    return visualSpriteRenderer;
+                }
+
+                return visualRoot.GetComponentInChildren<SpriteRenderer>(true);
+            }
+
+            return root.GetComponent<SpriteRenderer>();
+        }
+
+        /// <summary>
+        /// 获取 Puzzle 主碰撞体，优先使用 VisualRoot 下的组件
+        /// </summary>
+        /// <param name="root">Puzzle 根节点</param>
+        /// <param name="visualRoot">Puzzle 视觉根节点</param>
+        /// <returns>主碰撞体</returns>
+        private static PolygonCollider2D ResolvePolygonCollider2D(Transform root, Transform visualRoot)
+        {
+            if (visualRoot != null)
+            {
+                PolygonCollider2D visualCollider = visualRoot.GetComponent<PolygonCollider2D>();
+                if (visualCollider != null)
+                {
+                    return visualCollider;
+                }
+
+                return visualRoot.GetComponentInChildren<PolygonCollider2D>(true);
+            }
+
+            return root.GetComponent<PolygonCollider2D>();
         }
 
         /// <summary>

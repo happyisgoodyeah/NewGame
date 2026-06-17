@@ -83,5 +83,10 @@ namespace ET.Client
         /// 当前拖拽过程中是否已经进入 GridSnap 模式。
         /// </summary>
         public bool IsGridSnapActive { get; set; }
+
+        /// <summary>
+        /// 退出 GridSnap 后是否等待 Puzzle 与 Grid 完全脱离
+        /// </summary>
+        public bool IsWaitingGridContactRelease { get; set; }
     }
 }

@@ -221,9 +221,10 @@ namespace ET.Client
         /// </summary>
         /// <param name="puzzle">当前拖拽中的 Puzzle</param>
         /// <param name="grid">目标 Grid</param>
+        /// <param name="pointerWorldPosition">当前指针世界坐标</param>
         /// <param name="snapTarget">返回候选吸附目标</param>
         /// <returns>是否成功解析到候选吸附目标</returns>
-        public static bool TryResolveEntrySnapTarget(this Puzzle puzzle, Grid grid, out PuzzleGridSnapTarget snapTarget)
+        public static bool TryResolveEntrySnapTarget(this Puzzle puzzle, Grid grid, Vector3 pointerWorldPosition, out PuzzleGridSnapTarget snapTarget)
         {
             snapTarget = default;
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
@@ -234,7 +235,7 @@ namespace ET.Client
             }
 
             // 只有 Puzzle 多边形真实触碰 Grid 外圈 Slot 时才尝试进入吸附
-            if (!puzzle.TryResolveGridSlotContact(grid, true, out GridSlotContact gridSlotContact))
+            if (!puzzle.TryResolveGridSlotContact(grid, true, pointerWorldPosition, out GridSlotContact gridSlotContact))
             {
                 return false;
             }
@@ -330,13 +331,13 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 按旧实现的矩形范围规则判断指针是否仍处于可吸附拖拽范围。
+        /// 按当前 Puzzle 形状范围判断指针是否仍处于可吸附拖拽范围
         /// </summary>
-        /// <param name="puzzle">当前拖拽中的 Puzzle。</param>
-        /// <param name="grid">目标 Grid。</param>
-        /// <param name="gridView">目标 GridView。</param>
-        /// <param name="pointerWorldPosition">当前指针世界坐标。</param>
-        /// <returns>指针是否仍允许维持吸附模式。</returns>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">目标 Grid</param>
+        /// <param name="gridView">目标 GridView</param>
+        /// <param name="pointerWorldPosition">当前指针世界坐标</param>
+        /// <returns>指针是否仍允许维持吸附模式</returns>
         public static bool IsPointerInsideAdsorptionRange(this Puzzle puzzle, Grid grid, GridView gridView, Vector3 pointerWorldPosition)
         {
             if (puzzle == null || grid == null || gridView == null)
@@ -345,17 +346,15 @@ namespace ET.Client
             }
 
             puzzle.GetRotatedRange(out int minX, out int maxX, out int minY, out int maxY);
-            float puzzleWidth = (maxX - minX + 1) * gridView.CellSize;
-            float puzzleHeight = (maxY - minY + 1) * gridView.CellSize;
-            Vector3 topLeft = gridView.GetGridCoordinateWorldPosition(0, 0);
-            Vector3 bottomRight = gridView.GetGridCoordinateWorldPosition(grid.Width - 1, grid.Height - 1);
-            Vector3 gridCenter = (topLeft + bottomRight) * 0.5f;
-            float halfGridWidth = grid.Width * gridView.CellSize * 0.5f;
-            float halfGridHeight = grid.Height * gridView.CellSize * 0.5f;
-            return pointerWorldPosition.x >= gridCenter.x - halfGridWidth - puzzleWidth * 0.5f
-                    && pointerWorldPosition.x <= gridCenter.x + halfGridWidth + puzzleWidth * 0.5f
-                    && pointerWorldPosition.y >= gridCenter.y - halfGridHeight - puzzleHeight * 0.5f
-                    && pointerWorldPosition.y <= gridCenter.y + halfGridHeight + puzzleHeight * 0.5f;
+            Vector2 gridCoordinate = gridView.WorldToGridCoordinate(pointerWorldPosition);
+            float minAnchorX = -1f - maxX;
+            float maxAnchorX = grid.Width - minX;
+            float minAnchorY = -1f - maxY;
+            float maxAnchorY = grid.Height - minY;
+            return gridCoordinate.x >= minAnchorX
+                    && gridCoordinate.x <= maxAnchorX
+                    && gridCoordinate.y >= minAnchorY
+                    && gridCoordinate.y <= maxAnchorY;
         }
 
         /// <summary>
@@ -368,6 +367,23 @@ namespace ET.Client
         /// <returns>是否找到真实接触</returns>
         private static bool TryResolveGridSlotContact(this Puzzle puzzle, Grid grid, bool edgeOnly, out GridSlotContact contact)
         {
+            PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
+            Collider2D puzzleCollider = puzzleView?.BodyCollider2D;
+            Vector3 referenceWorldPosition = puzzleCollider != null ? puzzleCollider.bounds.center : Vector3.zero;
+            return puzzle.TryResolveGridSlotContact(grid, edgeOnly, referenceWorldPosition, out contact);
+        }
+
+        /// <summary>
+        /// 用 Puzzle 多边形和 Grid Slot BoxCollider2D 解析最接近参考点的真实接触
+        /// </summary>
+        /// <param name="puzzle">当前拖拽中的 Puzzle</param>
+        /// <param name="grid">目标 Grid</param>
+        /// <param name="edgeOnly">是否只检查 Grid 外圈 Slot</param>
+        /// <param name="referenceWorldPosition">用于选择接触结果的参考世界坐标</param>
+        /// <param name="contact">返回最近接触结果</param>
+        /// <returns>是否找到真实接触</returns>
+        private static bool TryResolveGridSlotContact(this Puzzle puzzle, Grid grid, bool edgeOnly, Vector3 referenceWorldPosition, out GridSlotContact contact)
+        {
             contact = default;
             PuzzleView puzzleView = puzzle?.GetComponent<PuzzleView>();
             Collider2D puzzleCollider = puzzleView?.BodyCollider2D;
@@ -378,7 +394,6 @@ namespace ET.Client
 
             bool hasContact = false;
             float bestScore = float.MaxValue;
-            Vector3 puzzleCenter = puzzleCollider.bounds.center;
             foreach (Entity child in grid.Children.Values)
             {
                 Slot gridSlot = child as Slot;
@@ -400,7 +415,7 @@ namespace ET.Client
                 Vector3 puzzleWorldPosition = ToVector3(distance.pointA);
                 Vector3 gridWorldPosition = ToVector3(distance.pointB);
                 Vector3 contactWorldPosition = (puzzleWorldPosition + gridWorldPosition) * 0.5f;
-                float score = (contactWorldPosition - puzzleCenter).sqrMagnitude;
+                float score = (contactWorldPosition - referenceWorldPosition).sqrMagnitude;
                 if (hasContact && score >= bestScore)
                 {
                     continue;
@@ -769,14 +784,19 @@ namespace ET.Client
         }
 
         /// <summary>
-        /// 判断目标 Puzzle Slot 是否作为进入吸附时的接触候选。
+        /// 判断目标 Puzzle Slot 是否作为进入吸附时的接触候选
         /// </summary>
-        /// <param name="puzzle">目标 Puzzle。</param>
-        /// <param name="slot">要检查的 Slot。</param>
-        /// <returns>是否为接触候选 Slot。</returns>
+        /// <param name="puzzle">目标 Puzzle</param>
+        /// <param name="slot">要检查的 Slot</param>
+        /// <returns>是否为接触候选 Slot</returns>
         private static bool IsEntrySlot(this Puzzle puzzle, Slot slot)
         {
-            return slot != null && (slot.X == 0 || slot.Y == 0);
+            return puzzle != null
+                    && slot != null
+                    && (puzzle.GetSlot(slot.X - 1, slot.Y) == null
+                            || puzzle.GetSlot(slot.X + 1, slot.Y) == null
+                            || puzzle.GetSlot(slot.X, slot.Y - 1) == null
+                            || puzzle.GetSlot(slot.X, slot.Y + 1) == null);
         }
 
         /// <summary>

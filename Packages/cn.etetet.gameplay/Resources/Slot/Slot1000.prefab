@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 506788489958065673}
   - component: {fileID: 569439909545082344}
   - component: {fileID: 976626196857634633}
+  - component: {fileID: 8033998988810001000}
   m_Layer: 0
   m_Name: Slot1000
   m_TagString: Untagged
@@ -47,6 +48,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameObjectRef: {fileID: 0}
+--- !u!114 &8033998988810001000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6679926106452300143}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d41c7ddd8719449f9313d0dbb14f8a24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  configId: 1000
+  configName: 拼图用格
+  x: 1
+  y: 1
+  prefabPathOverride: Slot/Slot1000
+  allowPlace: 0
+  includeLubanMarkerColumn: 1
 --- !u!61 &976626196857634633
 BoxCollider2D:
   m_ObjectHideFlags: 0

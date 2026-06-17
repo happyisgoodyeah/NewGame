@@ -19,8 +19,6 @@ namespace ET
         {
             Id = _buf.ReadInt();
             Name = _buf.ReadString();
-            X = _buf.ReadInt();
-            Y = _buf.ReadInt();
             PrefabPath = _buf.ReadString();
             {int n0 = _buf.ReadSize(); SlotOffset = new System.Collections.Generic.List<System.Collections.Generic.List<int>>(n0);for(var i0 = 0 ; i0 < n0 ; i0++) { System.Collections.Generic.List<int> _e0;  {int n1 = _buf.ReadSize(); _e0 = new System.Collections.Generic.List<int>(n1);for(var i1 = 0 ; i1 < n1 ; i1++) { int _e1;  _e1 = _buf.ReadInt(); _e0.Add(_e1);}} SlotOffset.Add(_e0);}}
 
@@ -40,14 +38,6 @@ namespace ET
         /// 名字
         /// </summary>
         public readonly string Name;
-        /// <summary>
-        /// x
-        /// </summary>
-        public readonly int X;
-        /// <summary>
-        /// y
-        /// </summary>
-        public readonly int Y;
         /// <summary>
         /// 预制体路径
         /// </summary>
@@ -70,8 +60,6 @@ namespace ET
             return "{ "
             + "Id:" + Id + ","
             + "Name:" + Name + ","
-            + "X:" + X + ","
-            + "Y:" + Y + ","
             + "PrefabPath:" + PrefabPath + ","
             + "SlotOffset:" + Luban.StringUtil.CollectionToString(SlotOffset) + ","
             + "}";

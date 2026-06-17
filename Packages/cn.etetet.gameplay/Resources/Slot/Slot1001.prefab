@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2809853763708978957}
   - component: {fileID: 6573557812493319488}
   - component: {fileID: 8132999855208939346}
+  - component: {fileID: 8033998988810001001}
   m_Layer: 0
   m_Name: Slot1001
   m_TagString: Untagged
@@ -47,6 +48,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameObjectRef: {fileID: 2073867891930494916}
+--- !u!114 &8033998988810001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073867891930494916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d41c7ddd8719449f9313d0dbb14f8a24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  configId: 1001
+  configName: 普通格
+  x: 1
+  y: 1
+  prefabPathOverride: Slot/Slot1001
+  allowPlace: 1
+  includeLubanMarkerColumn: 1
 --- !u!61 &8132999855208939346
 BoxCollider2D:
   m_ObjectHideFlags: 0

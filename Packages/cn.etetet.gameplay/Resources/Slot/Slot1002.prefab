@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2809853763708978957}
   - component: {fileID: 6573557812493319488}
   - component: {fileID: 8132999855208939346}
+  - component: {fileID: 8033998988810001002}
   m_Layer: 0
   m_Name: Slot1002
   m_TagString: Untagged
@@ -92,6 +93,25 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 3, y: 3}
   m_EdgeRadius: 0
+--- !u!114 &8033998988810001002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073867891930494916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d41c7ddd8719449f9313d0dbb14f8a24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  configId: 1002
+  configName: "\u969C\u788D\u683C"
+  x: 1
+  y: 1
+  prefabPathOverride: Slot/Slot1002
+  allowPlace: 0
+  includeLubanMarkerColumn: 1
 --- !u!1 &8956335070097304951
 GameObject:
   m_ObjectHideFlags: 0
@@ -166,7 +186,7 @@ SpriteRenderer:
   m_SortingLayer: 2
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: f9d4512bd8ab08b40920c4defad161ca, type: 3}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
