@@ -12,6 +12,12 @@ namespace HybridCLR.Editor.Commands
 {
     public class CompileDllCommand
     {
+        /// <summary>
+        /// 编译指定平台的热更新程序集
+        /// </summary>
+        /// <param name="buildDir">编译输出目录</param>
+        /// <param name="target">目标平台</param>
+        /// <param name="developmentBuild">是否按 Development Build 编译</param>
         public static void CompileDll(string buildDir, BuildTarget target, bool developmentBuild)
         {
             var group = BuildPipeline.GetBuildTargetGroup(target);
@@ -19,6 +25,7 @@ namespace HybridCLR.Editor.Commands
             ScriptCompilationSettings scriptCompilationSettings = new ScriptCompilationSettings();
             scriptCompilationSettings.group = group;
             scriptCompilationSettings.target = target;
+            scriptCompilationSettings.extraScriptingDefines = new[] { "IS_COMPILING" };
             scriptCompilationSettings.options = developmentBuild ? ScriptCompilationOptions.DevelopmentBuild : ScriptCompilationOptions.None;
             Directory.CreateDirectory(buildDir);
             ScriptCompilationResult scriptCompilationResult = PlayerBuildInterface.CompilePlayerScripts(scriptCompilationSettings, buildDir);
