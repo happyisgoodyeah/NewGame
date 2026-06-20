@@ -26,16 +26,6 @@ namespace ET
         /// </summary>
 	    [LabelText("登录2DBGM")]
         A2D_Login_Bgm_2D = 1,
-        /// <summary>
-        /// 1
-        /// </summary>
-	    [LabelText("1")]
-        Test1 = 2,
-        /// <summary>
-        /// 2
-        /// </summary>
-	    [LabelText("2")]
-        Test2 = 3,
     }
 } 
 

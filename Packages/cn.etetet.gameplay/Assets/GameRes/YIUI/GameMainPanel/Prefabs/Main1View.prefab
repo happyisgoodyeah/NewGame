@@ -253,7 +253,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1712166418363963987}
-  - component: {fileID: 6908777136051554145}
+  - component: {fileID: 982664861722566038}
   m_Layer: 0
   m_Name: BGM
   m_TagString: Untagged
@@ -276,7 +276,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6425424408581684719}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6908777136051554145
+--- !u!114 &982664861722566038
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -298,12 +298,12 @@ MonoBehaviour:
     PrefabModifications: []
     SerializationNodes: []
   m_IsConfig: 1
-  m_MusicName: Audio_Login_BGM123
+  m_MusicName: Audio_Login_BGM
   m_Volume: 1
   m_ConfigKey: A2D_Login_Bgm_2D
   m_LastMusicName: 
   m_Priority: 10
-  m_ActivatePlay: 1
+  m_ActivatePlay: 0
 --- !u!1 &2484065516049409288
 GameObject:
   m_ObjectHideFlags: 0
@@ -2159,9 +2159,9 @@ RectTransform:
   - {fileID: 2893327694873659218}
   m_Father: {fileID: 6425424408581684719}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -540}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 603, y: 660}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6739627435577099965
